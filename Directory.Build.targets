@@ -1,0 +1,58 @@
+<Project>
+  <PropertyGroup>
+    <CsharpSourceDir>$(SolutionDir)src</CsharpSourceDir>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="build\**" />
+    <Content Remove="build\**" />
+    <EmbeddedResource Remove="build\**" />
+    <None Remove="build\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Programming -->
+    <PackageReference Include="morelinq" />
+    <PackageReference Include="Enums.NET" />
+    <!-- IDisposable -->
+    <PackageReference Include="Fody">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>
+        runtime; build; native; contentfiles; analyzers; buildtransitive
+      </IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Janitor.fody">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <!-- Logging -->
+    <PackageReference Include="Serilog" />
+    <PackageReference Include="Serilog.Settings.Configuration" />
+    <PackageReference Include="Serilog.Sinks.File" />
+    <PackageReference Include="Serilog.Sinks.Console" />
+    <PackageReference Include="Serilog.Enrichers.Environment" />
+    <PackageReference
+      Condition="'$(UsingMicrosoftNETSdkWeb)' == 'True'"
+      Include="Serilog.AspNetCore"
+    />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+  <Target Name="EnsureCSharpier">
+    <Exec
+      Command="csharpier --version"
+      IgnoreExitCode="true"
+      StandardErrorImportance="high"
+      StandardOutputImportance="low"
+    >
+      <Output PropertyName="CSharpierExists" TaskParameter="ExitCode" />
+    </Exec>
+    <Error
+      Condition="'$(CSharpierExists)' != '0'"
+      Text="csharpier is required but not found. Please install it via 'dotnet tool install -g csharpier' or visit https://www.nuget.org/packages/CSharpier/"
+    />
+  </Target>
+  <Target BeforeTargets="Restore" DependsOnTargets="EnsureCSharpier" Name="FormatCSharpier">
+    <Exec
+      Command="csharpier format $(CsharpSourceDir)"
+      StandardErrorImportance="high"
+      StandardOutputImportance="low"
+    />
+  </Target>
+</Project>
