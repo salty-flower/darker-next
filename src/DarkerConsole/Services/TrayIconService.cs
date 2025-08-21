@@ -8,8 +8,10 @@ using Microsoft.Extensions.Logging;
 namespace DarkerConsole.Services;
 
 [SupportedOSPlatform("windows")]
-public class TrayIconService(ILogger<TrayIconService> logger) : IAsyncDisposable
+public class TrayIconService(ThemeService themeService, ILogger<TrayIconService> logger)
+    : IAsyncDisposable
 {
+    private readonly ThemeService _themeService = themeService;
     private readonly ILogger<TrayIconService> _logger = logger;
     private IntPtr _windowHandle;
     private IntPtr _lightIcon;
@@ -330,7 +332,7 @@ public class TrayIconService(ILogger<TrayIconService> logger) : IAsyncDisposable
             uID = 1,
             uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP,
             uCallbackMessage = WM_TRAYICON,
-            hIcon = _lightIcon != IntPtr.Zero ? _lightIcon : IntPtr.Zero,
+            hIcon = _themeService.IsLightThemeEnabled() ? _lightIcon : _darkIcon,
             szTip = "DarkerConsole - Click to toggle theme",
         };
 
