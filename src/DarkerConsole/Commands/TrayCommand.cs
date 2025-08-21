@@ -23,6 +23,7 @@ public class TrayCommand(
     private readonly ThemeService _themeService = themeService;
     private readonly ToastService _toastService = toastService;
     private readonly AppConfig _config = config.Value;
+    private readonly AppConfig.FastAccess _fastConfig = AppConfig.FastAccess.From(config.Value);
     private readonly ILogger<TrayCommand> _logger = logger;
     private readonly CancellationTokenSource _cancellationTokenSource = new();
 
@@ -61,10 +62,10 @@ public class TrayCommand(
 
             await _trayIconService.UpdateIconAsync(!isNowLight);
 
-            if (_config.ShowToasts)
+            if (_fastConfig.ShowToasts)
             {
                 var themeText = isNowLight ? "Light" : "Dark";
-                await _toastService.ShowThemeChangedNotificationAsync(themeText);
+                _toastService.ShowThemeChangedNotification(themeText);
             }
 
             _logger.LogInformation(
@@ -76,9 +77,9 @@ public class TrayCommand(
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error toggling theme");
-            if (_config.ShowToasts)
+            if (_fastConfig.ShowToasts)
             {
-                await _toastService.ShowErrorNotificationAsync("Failed to toggle theme");
+                _toastService.ShowErrorNotification("Failed to toggle theme");
             }
         }
     }

@@ -21,6 +21,9 @@ public class TrayIconService(ThemeService themeService, ILogger<TrayIconService>
     private volatile bool _exitRequested;
     private WndProc? _wndProcDelegate;
     private uint _mainThreadId;
+    private static readonly string WindowClassName = $"DarkerConsoleTray_{Environment.ProcessId}";
+    private static ReadOnlySpan<byte> LightIconName => "icon-light.ico"u8;
+    private static ReadOnlySpan<byte> DarkIconName => "icon-dark.ico"u8;
 
     private const uint WM_QUIT = 0x0012;
     private const int WM_TRAYICON = 0x8000;
@@ -102,10 +105,10 @@ public class TrayIconService(ThemeService themeService, ILogger<TrayIconService>
     private delegate IntPtr WndProc(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam);
 
     [DllImport("shell32.dll", EntryPoint = "Shell_NotifyIconW")]
-    private static extern bool Shell_NotifyIcon(int dwMessage, ref NOTIFYICONDATA lpData);
+    private static extern bool Shell_NotifyIcon(int dwMessage, in NOTIFYICONDATA lpData);
 
     [DllImport("user32.dll", EntryPoint = "RegisterClassW")]
-    private static extern short RegisterClass(ref WNDCLASS lpWndClass);
+    private static extern short RegisterClass(in WNDCLASS lpWndClass);
 
     [DllImport("user32.dll", EntryPoint = "CreateWindowExW", CharSet = CharSet.Unicode)]
     private static extern IntPtr CreateWindowEx(
@@ -239,7 +242,6 @@ public class TrayIconService(ThemeService themeService, ILogger<TrayIconService>
     private void CreateMessageWindow()
     {
         var hInstance = GetModuleHandle(null);
-        var className = $"DarkerConsoleTray_{Guid.NewGuid():N}";
 
         if (_wndProcDelegate == null)
         {
@@ -256,17 +258,17 @@ public class TrayIconService(ThemeService themeService, ILogger<TrayIconService>
             hCursor = IntPtr.Zero,
             hbrBackground = IntPtr.Zero,
             lpszMenuName = null,
-            lpszClassName = className,
+            lpszClassName = WindowClassName,
         };
 
-        if (RegisterClass(ref wndClass) == 0)
+        if (RegisterClass(in wndClass) == 0)
         {
             throw new InvalidOperationException("Failed to register window class");
         }
 
         _windowHandle = CreateWindowEx(
             0,
-            className,
+            WindowClassName,
             "DarkerConsole",
             0,
             0,
@@ -351,7 +353,7 @@ public class TrayIconService(ThemeService themeService, ILogger<TrayIconService>
             szTip = "DarkerConsole - Click to toggle theme",
         };
 
-        if (!Shell_NotifyIcon(NIM_ADD, ref nid))
+        if (!Shell_NotifyIcon(NIM_ADD, in nid))
         {
             throw new InvalidOperationException("Failed to add tray icon");
         }
@@ -374,7 +376,7 @@ public class TrayIconService(ThemeService themeService, ILogger<TrayIconService>
                 hIcon = icon,
             };
 
-            Shell_NotifyIcon(NIM_MODIFY, ref nid);
+            Shell_NotifyIcon(NIM_MODIFY, in nid);
         });
     }
 
@@ -544,7 +546,7 @@ public class TrayIconService(ThemeService themeService, ILogger<TrayIconService>
                         hWnd = _windowHandle,
                         uID = 1,
                     };
-                    Shell_NotifyIcon(NIM_DELETE, ref nid);
+                    Shell_NotifyIcon(NIM_DELETE, in nid);
                 }
 
                 if (_lightIcon != IntPtr.Zero)

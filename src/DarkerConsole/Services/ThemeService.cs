@@ -13,10 +13,13 @@ namespace DarkerConsole.Services;
 public class ThemeService(ILogger<ThemeService> logger, IOptions<AppConfig> config)
 {
     private readonly AppConfig _config = config.Value;
+    private readonly string _themeMode = config.Value.ThemeMode;
     private const string PERSONALIZE_KEY =
         @"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize";
     private const string SYSTEM_THEME_VALUE = "SystemUsesLightTheme";
     private const string APPS_THEME_VALUE = "AppsUseLightTheme";
+    private const int LIGHT_THEME = 1;
+    private const int DARK_THEME = 0;
 
     public bool IsLightThemeEnabled()
     {
@@ -29,21 +32,16 @@ public class ThemeService(ILogger<ThemeService> logger, IOptions<AppConfig> conf
                 return false;
             }
 
-            var systemValue = key.GetValue(SYSTEM_THEME_VALUE);
-            var appsValue = key.GetValue(APPS_THEME_VALUE);
+            var systemTheme = (int)(key.GetValue(SYSTEM_THEME_VALUE) ?? DARK_THEME);
+            var appsTheme = (int)(key.GetValue(APPS_THEME_VALUE) ?? DARK_THEME);
 
-            if (systemValue is int systemTheme && appsValue is int appsTheme)
-                return _config.ThemeMode switch
-                {
-                    "system-only" => systemTheme == 1,
-                    "apps-only" => appsTheme == 1,
-                    _ => systemTheme == 1 || appsTheme == 1,
-                };
+            return _themeMode switch
+            {
+                "system-only" => systemTheme == LIGHT_THEME,
+                "apps-only" => appsTheme == LIGHT_THEME,
+                _ => systemTheme == LIGHT_THEME || appsTheme == LIGHT_THEME,
+            };
 
-            logger.LogWarning(
-                "Theme registry values not found or invalid type, assuming dark theme"
-            );
-            return false;
         }
         catch (Exception ex)
         {
@@ -65,25 +63,25 @@ public class ThemeService(ILogger<ThemeService> logger, IOptions<AppConfig> conf
                     throw new InvalidOperationException("Cannot access Windows theme settings");
                 }
 
-                var currentSystemValue = key.GetValue(SYSTEM_THEME_VALUE) as int? ?? 0;
-                var currentAppsValue = key.GetValue(APPS_THEME_VALUE) as int? ?? 0;
+                var currentSystemValue = (int)(key.GetValue(SYSTEM_THEME_VALUE) ?? DARK_THEME);
+                var currentAppsValue = (int)(key.GetValue(APPS_THEME_VALUE) ?? DARK_THEME);
 
                 var isCurrentlyLight = _config.ThemeMode switch
                 {
-                    "system-only" => currentSystemValue == 1,
-                    "apps-only" => currentAppsValue == 1,
-                    _ => currentSystemValue == 1 || currentAppsValue == 1,
+                    "system-only" => currentSystemValue == LIGHT_THEME,
+                    "apps-only" => currentAppsValue == LIGHT_THEME,
+                    _ => currentSystemValue == LIGHT_THEME || currentAppsValue == LIGHT_THEME,
                 };
 
-                var newValue = isCurrentlyLight ? 0 : 1;
+                var newValue = isCurrentlyLight ? DARK_THEME : LIGHT_THEME;
 
-                switch (_config.ThemeMode)
+                switch (_themeMode)
                 {
                     case "system-only":
                         key.SetValue(SYSTEM_THEME_VALUE, newValue, RegistryValueKind.DWord);
                         logger.LogInformation(
                             "System theme changed to {Theme}",
-                            newValue == 1 ? "Light" : "Dark"
+                            newValue == LIGHT_THEME ? "Light" : "Dark"
                         );
                         break;
 
@@ -91,7 +89,7 @@ public class ThemeService(ILogger<ThemeService> logger, IOptions<AppConfig> conf
                         key.SetValue(APPS_THEME_VALUE, newValue, RegistryValueKind.DWord);
                         logger.LogInformation(
                             "Apps theme changed to {Theme}",
-                            newValue == 1 ? "Light" : "Dark"
+                            newValue == LIGHT_THEME ? "Light" : "Dark"
                         );
                         break;
 
@@ -101,7 +99,7 @@ public class ThemeService(ILogger<ThemeService> logger, IOptions<AppConfig> conf
                         key.SetValue(APPS_THEME_VALUE, newValue, RegistryValueKind.DWord);
                         logger.LogInformation(
                             "Both system and apps theme changed to {Theme}",
-                            newValue == 1 ? "Light" : "Dark"
+                            newValue == LIGHT_THEME ? "Light" : "Dark"
                         );
                         break;
                 }
@@ -129,9 +127,9 @@ public class ThemeService(ILogger<ThemeService> logger, IOptions<AppConfig> conf
                     throw new InvalidOperationException("Cannot access Windows theme settings");
                 }
 
-                var value = isLight ? 1 : 0;
+                var value = isLight ? LIGHT_THEME : DARK_THEME;
 
-                switch (_config.ThemeMode)
+                switch (_themeMode)
                 {
                     case "system-only":
                         key.SetValue(SYSTEM_THEME_VALUE, value, RegistryValueKind.DWord);
