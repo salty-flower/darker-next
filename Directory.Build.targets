@@ -1,6 +1,7 @@
 <Project>
   <PropertyGroup>
     <CsharpSourceDir>$(SolutionDir)src</CsharpSourceDir>
+    <IconsCompileDir>$(IntermediateOutputPath)\icons</IconsCompileDir>
   </PropertyGroup>
   <ItemGroup>
     <Compile Remove="build\**" />
@@ -37,21 +38,31 @@
   <Target Name="CompileIcons" BeforeTargets="Build">
     <PropertyGroup>
       <AssetsDir>$(MSBuildThisFileDirectory)src\DarkerConsole\assets</AssetsDir>
-      <OutputIconDir>$(MSBuildThisFileDirectory)src\DarkerConsole</OutputIconDir>
     </PropertyGroup>
     <ItemGroup>
       <SvgIcons Include="$(AssetsDir)\*.svg" />
     </ItemGroup>
+    <!-- Create the intermediate directory -->
+    <MakeDir Directories="$(IconsCompileDir)" />
+    <!-- Define the paths for the generated icons in the intermediate directory -->
     <ItemGroup>
-      <IcoFiles Include="$(OutputIconDir)\*.ico" />
+      <GeneratedIcoFiles Include="@(SvgIcons-&gt;'$(IconsCompileDir)\%(Filename).ico')" />
     </ItemGroup>
-    <Delete Files="@(IcoFiles)" />
+    <!-- Clean old generated icons -->
+    <Delete Files="@(GeneratedIcoFiles)" />
+    <!-- Generate the new icons -->
     <Exec
-      Command="magick &quot;%(SvgIcons.FullPath)&quot; -transparent white -density 1200 -resize 1024x1024 -define icon:auto-resize=256,48,32,16 &quot;$(OutputIconDir)\\%(SvgIcons.Filename).ico&quot;"
+      Command="magick &quot;%(SvgIcons.FullPath)&quot; -transparent white -density 1200 -resize 1024x1024 -define icon:auto-resize=256,48,32,16 &quot;$(IconsCompileDir)\%(SvgIcons.Filename).ico&quot;"
       Condition="Exists('%(SvgIcons.FullPath)')"
       ContinueOnError="false"
       StandardErrorImportance="high"
       StandardOutputImportance="low"
     />
+    <!-- Add the generated icons to the Content item group so they get copied to the output directory -->
+    <ItemGroup>
+      <Content Include="@(GeneratedIcoFiles)">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+    </ItemGroup>
   </Target>
 </Project>

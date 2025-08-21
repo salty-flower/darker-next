@@ -64,15 +64,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="config.toml" CopyToOutputDirectory="Always" />
-    <None
-      Include="icon-light.ico"
-      CopyToOutputDirectory="Always"
-      Condition="Exists('icon-light.ico')"
-    />
-    <None
-      Include="icon-dark.ico"
-      CopyToOutputDirectory="Always"
-      Condition="Exists('icon-dark.ico')"
-    />
+    <None Include="$(IconsCompileDir)\icon*.ico" CopyToOutputDirectory="Always" />
   </ItemGroup>
 </Project>
