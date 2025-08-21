@@ -1,17 +1,7 @@
 using System;
-using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
-using DarkerConsole.Commands;
-using DarkerConsole.Models;
-using DarkerConsole.Services;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using Serilog;
-using Tomlyn;
+using DarkerConsole.Infrastructure;
 
 namespace DarkerConsole;
 
@@ -27,68 +17,23 @@ class Program
 
     static async Task Main(string[] args)
     {
-        Log.Logger = new LoggerConfiguration()
-            .MinimumLevel.Debug()
-            .WriteTo.File("logs/darkerconsole-.txt", rollingInterval: RollingInterval.Day)
-            .WriteTo.Console()
-            .CreateLogger();
-
         try
         {
-            var builder = Host.CreateApplicationBuilder(args);
-
-            // Load TOML config if available
-            var configPath = "config.toml";
-            if (File.Exists(configPath))
-            {
-                var tomlContent = File.ReadAllText(configPath);
-                var tomlModel = Toml.ToModel(tomlContent);
-                // For now, we'll use default configuration
-                // TODO: Implement TOML to IConfiguration conversion
-            }
-
-            builder.Services.Configure<AppConfig>(
-                builder.Configuration.GetSection("DarkerConsole")
-                    ?? builder.Configuration.GetSection("")
-            );
-
-            builder.Services.AddSingleton<TrayIconService>();
-            builder.Services.AddSingleton<ThemeService>();
-            builder.Services.AddSingleton<ToastService>();
-
-            builder.Services.AddSerilog();
-
-            var host = builder.Build();
-
             if (args.Length == 0)
             {
                 HideConsoleWindow();
             }
 
-            // Get services from DI container
-            var trayIconService = host.Services.GetRequiredService<TrayIconService>();
-            var themeService = host.Services.GetRequiredService<ThemeService>();
-            var toastService = host.Services.GetRequiredService<ToastService>();
-            var config = host.Services.GetRequiredService<IOptions<AppConfig>>();
-            var logger = host.Services.GetRequiredService<ILogger<TrayCommand>>();
+            // Create Jab service provider (compile-time DI)
+            var serviceProvider = new ServiceProvider();
 
-            // Create and run tray command directly
-            var trayCommand = new TrayCommand(
-                trayIconService,
-                themeService,
-                toastService,
-                config,
-                logger
-            );
+            // Get and run tray command
+            var trayCommand = serviceProvider.GetService<DarkerConsole.Commands.TrayCommand>();
             await trayCommand.RunAsync();
         }
         catch (Exception ex)
         {
-            Log.Fatal(ex, "Application terminated unexpectedly");
-        }
-        finally
-        {
-            await Log.CloseAndFlushAsync();
+            Console.WriteLine($"Application terminated unexpectedly: {ex}");
         }
     }
 

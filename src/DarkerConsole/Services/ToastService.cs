@@ -5,14 +5,9 @@ using Microsoft.Extensions.Logging;
 
 namespace DarkerConsole.Services;
 
-public class ToastService
+public class ToastService(ILogger<ToastService> logger)
 {
-    private readonly ILogger<ToastService> _logger;
-
-    public ToastService(ILogger<ToastService> logger)
-    {
-        _logger = logger;
-    }
+    private readonly ILogger<ToastService> _logger = logger;
 
     public async Task ShowThemeChangedNotificationAsync(string themeName)
     {

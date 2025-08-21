@@ -6,9 +6,9 @@ using Microsoft.Extensions.Logging;
 
 namespace DarkerConsole.Services;
 
-public class TrayIconService : IAsyncDisposable
+public class TrayIconService(ILogger<TrayIconService> logger) : IAsyncDisposable
 {
-    private readonly ILogger<TrayIconService> _logger;
+    private readonly ILogger<TrayIconService> _logger = logger;
     private IntPtr _windowHandle;
     private IntPtr _lightIcon;
     private IntPtr _darkIcon;
@@ -16,6 +16,8 @@ public class TrayIconService : IAsyncDisposable
     private Func<Task>? _onTrayIconClick;
     private Action? _onMenuExit;
     private bool _disposed;
+    private volatile bool _exitRequested;
+    private WndProc _wndProcDelegate;
 
     private const int WM_TRAYICON = 0x8000;
     private const int WM_LBUTTONUP = 0x0202;
@@ -93,7 +95,6 @@ public class TrayIconService : IAsyncDisposable
     }
 
     private delegate IntPtr WndProc(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam);
-    private readonly WndProc _wndProcDelegate;
 
     [DllImport("shell32.dll", EntryPoint = "Shell_NotifyIconW")]
     private static extern bool Shell_NotifyIcon(int dwMessage, ref NOTIFYICONDATA lpData);
@@ -154,7 +155,7 @@ public class TrayIconService : IAsyncDisposable
     );
 
     [DllImport("user32.dll")]
-    private static extern bool TrackPopupMenu(
+    private static extern int TrackPopupMenu(
         IntPtr hMenu,
         int uFlags,
         int x,
@@ -195,16 +196,11 @@ public class TrayIconService : IAsyncDisposable
     private const int MF_STRING = 0x00000000;
     private const int TPM_RETURNCMD = 0x0100;
 
-    public TrayIconService(ILogger<TrayIconService> logger)
-    {
-        _logger = logger;
-        _wndProcDelegate = WindowProc;
-    }
-
     public async Task InitializeAsync(Func<Task> onTrayIconClick, Action onMenuExit)
     {
         _onTrayIconClick = onTrayIconClick;
         _onMenuExit = onMenuExit;
+        _wndProcDelegate = WindowProc;
 
         await Task.Run(() =>
         {
@@ -393,7 +389,7 @@ public class TrayIconService : IAsyncDisposable
         if (_menuHandle != IntPtr.Zero && GetCursorPos(out var point))
         {
             SetForegroundWindow(_windowHandle);
-            TrackPopupMenu(
+            var selectedItem = TrackPopupMenu(
                 _menuHandle,
                 TPM_RETURNCMD,
                 point.x,
@@ -402,6 +398,12 @@ public class TrayIconService : IAsyncDisposable
                 _windowHandle,
                 IntPtr.Zero
             );
+
+            if (selectedItem == MENU_EXIT_ID)
+            {
+                _logger.LogInformation("Exit selected from context menu");
+                _onMenuExit?.Invoke();
+            }
         }
     }
 
@@ -410,7 +412,7 @@ public class TrayIconService : IAsyncDisposable
         _logger.LogInformation("Starting Win32 message loop");
 
         MSG msg;
-        while (GetMessage(out msg, IntPtr.Zero, 0, 0))
+        while (!_exitRequested && GetMessage(out msg, IntPtr.Zero, 0, 0))
         {
             TranslateMessage(ref msg);
             DispatchMessage(ref msg);
@@ -421,7 +423,8 @@ public class TrayIconService : IAsyncDisposable
 
     public void ExitMessageLoop()
     {
-        _logger.LogInformation("Posting quit message to exit message loop");
+        _logger.LogInformation("Requesting message loop exit");
+        _exitRequested = true;
         PostQuitMessage(0);
     }
 
@@ -429,6 +432,8 @@ public class TrayIconService : IAsyncDisposable
     {
         if (_disposed)
             return;
+
+        ExitMessageLoop();
 
         await Task.Run(() =>
         {

@@ -8,20 +8,14 @@ using Microsoft.Win32;
 
 namespace DarkerConsole.Services;
 
-public class ThemeService
+public class ThemeService(ILogger<ThemeService> logger, IOptions<AppConfig> config)
 {
-    private readonly ILogger<ThemeService> _logger;
-    private readonly AppConfig _config;
+    private readonly ILogger<ThemeService> _logger = logger;
+    private readonly AppConfig _config = config.Value;
     private const string PERSONALIZE_KEY =
         @"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize";
     private const string SYSTEM_THEME_VALUE = "SystemUsesLightTheme";
     private const string APPS_THEME_VALUE = "AppsUseLightTheme";
-
-    public ThemeService(ILogger<ThemeService> logger, IOptions<AppConfig> config)
-    {
-        _logger = logger;
-        _config = config.Value;
-    }
 
     public bool IsLightThemeEnabled()
     {
