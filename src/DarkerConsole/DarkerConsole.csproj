@@ -14,6 +14,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <PublishTrimmed>true</PublishTrimmed>
+    <PublishReadyToRun>true</PublishReadyToRun>
     <TrimMode>partial</TrimMode>
     <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
     <DebuggerSupport>false</DebuggerSupport>
@@ -25,34 +26,20 @@
     <UseSystemResourceKeys>true</UseSystemResourceKeys>
     <PublishLzmaCompressed>true</PublishLzmaCompressed>
     <InvariantGlobalization>true</InvariantGlobalization>
+    <OptimizationPreference>Size</OptimizationPreference>
+    <TieredCompilation>false</TieredCompilation>
+    <TieredPGO>false</TieredPGO>
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
     <NoWarn>$(NoWarn);IL21Aot</NoWarn>
   </PropertyGroup>
-  <!-- Publish profile settings -->
-  <!-- AOT Build -->
   <PropertyGroup Condition="'$(PublishAot)' == 'true'">
-    <PublishLzmaCompressed>true</PublishLzmaCompressed>
-    <OptimizationPreference>Size</OptimizationPreference>
     <IlcOptimizationPreference>Size</IlcOptimizationPreference>
     <IlcGenerateStackTraceData>false</IlcGenerateStackTraceData>
     <IlcFoldIdenticalMethodBodies>true</IlcFoldIdenticalMethodBodies>
-    <StripSymbols>true</StripSymbols>
-    <TieredCompilation>false</TieredCompilation>
-    <TieredPGO>false</TieredPGO>
-    <ServerGarbageCollection>false</ServerGarbageCollection>
-    <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
-  </PropertyGroup>
-  <!-- Non-AOT Build -->
-  <PropertyGroup Condition="'$(PublishAot)' != 'true'">
-    <OptimizationPreference>Size</OptimizationPreference>
-    <TieredCompilation>false</TieredCompilation>
-    <TieredPGO>false</TieredPGO>
-    <ServerGarbageCollection>false</ServerGarbageCollection>
-    <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
   </PropertyGroup>
   <ItemGroup>
     <TrimmerRootAssembly Include="Tomlyn" />
-  </ItemGroup>
-  <ItemGroup>
     <PackageReference Include="ConsoleAppFramework" />
     <PackageReference Include="Tomlyn" />
     <PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" />
@@ -61,8 +48,6 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" />
     <PackageReference Include="PublishAotCompressed" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="config.toml" CopyToOutputDirectory="Always" />
     <None Include="$(IconsCompileDir)\icon*.ico" CopyToOutputDirectory="Always" />
   </ItemGroup>
