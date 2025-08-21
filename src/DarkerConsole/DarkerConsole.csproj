@@ -39,7 +39,6 @@
     <IlcFoldIdenticalMethodBodies>true</IlcFoldIdenticalMethodBodies>
   </PropertyGroup>
   <ItemGroup>
-    <TrimmerRootAssembly Include="Tomlyn" />
     <PackageReference Include="ConsoleAppFramework" />
     <PackageReference Include="Tomlyn" />
     <PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" />
