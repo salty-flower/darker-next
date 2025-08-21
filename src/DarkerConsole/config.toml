@@ -12,8 +12,8 @@ auto_startup = false
 
 [icons]
 # Icon file paths (relative to executable or absolute paths)
-light_icon_path = "Resources/icon-light.ico"
-dark_icon_path = "Resources/icon-dark.ico"
+light_icon_path = "icon-light.ico"
+dark_icon_path = "icon-dark.ico"
 
 [toasts]
 # Show notification when theme changes
