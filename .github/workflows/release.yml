@@ -15,7 +15,12 @@ on:
         - false
 
 jobs:
-  release:
+  call-publish:
+    uses: ./.github/workflows/publish.yml
+    secrets: inherit # Pass all secrets to the reusable workflow
+
+  create-release:
+    needs: call-publish
     runs-on: windows-latest
 
     steps:
@@ -23,32 +28,26 @@ jobs:
       with:
         fetch-depth: 0 # Required for git tag
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
+    - name: Download Build Artifact
+      id: download_artifact
+      uses: actions/download-artifact@v5
       with:
-        dotnet-version: 10
+        name: ${{ needs.call-publish.outputs.artifact_name }}
+        path: artifact_download
 
-    - name: Restore dependencies
-      run: dotnet restore
-
-    - name: Build
-      run: dotnet build --no-restore
-
-    - name: Publish DarkerConsole
-      run: dotnet publish src/DarkerConsole/DarkerConsole.csproj -p:PublishAOT=true
-
-    - name: Upload a Build Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: DarkerConsole-win-x64
-        path: build/publish/DarkerConsole/release_win-x64
+    - name: Show artifact path contents
+      run: |
+        echo "Download Path: ${{ steps.download_artifact.outputs.download-path }}"
+        Get-ChildItem -Path ${{ steps.download_artifact.outputs.download-path }} -Recurse -Force
+        echo "Everything"
+        Get-ChildItem -Recurse -Force
 
     - name: Bump version and push tag
       id: tag_version
       uses: mathieudutour/github-tag-action@v6.2
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        default_bump: ${{ inputs.default_bump }}
+        default_bump: ${{ github.event.inputs.default_bump }}
         tag_prefix: 'v'
         
     - name: Create a GitHub release
@@ -57,6 +56,6 @@ jobs:
         tag_name: ${{ steps.tag_version.outputs.new_tag }}
         name: Release ${{ steps.tag_version.outputs.new_tag }}
         body: ${{ steps.tag_version.outputs.changelog }}
-        files: build/publish/DarkerConsole/release_win-x64/*
+        files: ${{ steps.download_artifact.outputs.download-path }}/*
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
