@@ -1,10 +1,12 @@
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Threading.Tasks;
 using DarkerConsole.Infrastructure;
 
 namespace DarkerConsole;
 
+[SupportedOSPlatform("windows")]
 class Program
 {
     [DllImport("kernel32.dll")]
@@ -15,6 +17,7 @@ class Program
 
     private const int SW_HIDE = 0;
 
+    [SupportedOSPlatform("windows")]
     static async Task Main(string[] args)
     {
         try

@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Runtime.Versioning;
 using DarkerConsole.Commands;
 using DarkerConsole.Models;
 using DarkerConsole.Services;
@@ -21,8 +23,14 @@ namespace DarkerConsole.Infrastructure;
 [Singleton(typeof(ToastService))]
 [Singleton(typeof(TrayCommand))]
 [Singleton(typeof(IOptions<AppConfig>), Factory = nameof(CreateAppConfig))]
+[SupportedOSPlatform("windows")]
 internal partial class ServiceProvider
 {
+    [UnconditionalSuppressMessage(
+        "Trimming",
+        "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code",
+        Justification = "CompactConsoleFormatterOptions is simple and can be statically analyzed"
+    )]
     private static ILogger<TrayIconService> CreateTrayIconLogger()
     {
         return LoggerFactory
@@ -37,6 +45,11 @@ internal partial class ServiceProvider
             .CreateLogger<TrayIconService>();
     }
 
+    [UnconditionalSuppressMessage(
+        "Trimming",
+        "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code",
+        Justification = "CompactConsoleFormatterOptions is simple and can be statically analyzed"
+    )]
     private static ILogger<ThemeService> CreateThemeServiceLogger()
     {
         return LoggerFactory
@@ -51,6 +64,11 @@ internal partial class ServiceProvider
             .CreateLogger<ThemeService>();
     }
 
+    [UnconditionalSuppressMessage(
+        "Trimming",
+        "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code",
+        Justification = "CompactConsoleFormatterOptions is simple and can be statically analyzed"
+    )]
     private static ILogger<ToastService> CreateToastServiceLogger()
     {
         return LoggerFactory
@@ -65,6 +83,11 @@ internal partial class ServiceProvider
             .CreateLogger<ToastService>();
     }
 
+    [UnconditionalSuppressMessage(
+        "Trimming",
+        "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code",
+        Justification = "CompactConsoleFormatterOptions is simple and can be statically analyzed"
+    )]
     private static ILogger<TrayCommand> CreateTrayCommandLogger()
     {
         return LoggerFactory

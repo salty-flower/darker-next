@@ -1,11 +1,13 @@
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
 namespace DarkerConsole.Services;
 
+[SupportedOSPlatform("windows")]
 public class TrayIconService(ILogger<TrayIconService> logger) : IAsyncDisposable
 {
     private readonly ILogger<TrayIconService> _logger = logger;
@@ -17,7 +19,7 @@ public class TrayIconService(ILogger<TrayIconService> logger) : IAsyncDisposable
     private Action? _onMenuExit;
     private bool _disposed;
     private volatile bool _exitRequested;
-    private WndProc _wndProcDelegate;
+    private WndProc? _wndProcDelegate;
 
     private const int WM_TRAYICON = 0x8000;
     private const int WM_LBUTTONUP = 0x0202;
@@ -71,10 +73,10 @@ public class TrayIconService(ILogger<TrayIconService> logger) : IAsyncDisposable
         public IntPtr hbrBackground;
 
         [MarshalAs(UnmanagedType.LPWStr)]
-        public string lpszMenuName;
+        public string? lpszMenuName;
 
         [MarshalAs(UnmanagedType.LPWStr)]
-        public string lpszClassName;
+        public string? lpszClassName;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -142,7 +144,7 @@ public class TrayIconService(ILogger<TrayIconService> logger) : IAsyncDisposable
     private static extern IntPtr LoadIcon(IntPtr hInstance, IntPtr lpIconName);
 
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
-    private static extern IntPtr GetModuleHandle(string lpModuleName);
+    private static extern IntPtr GetModuleHandle(string? lpModuleName);
 
     [DllImport("user32.dll")]
     private static extern IntPtr CreatePopupMenu();
@@ -229,7 +231,7 @@ public class TrayIconService(ILogger<TrayIconService> logger) : IAsyncDisposable
         var wndClass = new WNDCLASS
         {
             style = 0,
-            lpfnWndProc = Marshal.GetFunctionPointerForDelegate(_wndProcDelegate),
+            lpfnWndProc = Marshal.GetFunctionPointerForDelegate(_wndProcDelegate!),
             cbClsExtra = 0,
             cbWndExtra = 0,
             hInstance = hInstance,

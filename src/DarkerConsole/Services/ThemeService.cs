@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Threading.Tasks;
 using DarkerConsole.Models;
 using Microsoft.Extensions.Logging;
@@ -8,6 +9,7 @@ using Microsoft.Win32;
 
 namespace DarkerConsole.Services;
 
+[SupportedOSPlatform("windows")]
 public class ThemeService(ILogger<ThemeService> logger, IOptions<AppConfig> config)
 {
     private readonly ILogger<ThemeService> _logger = logger;

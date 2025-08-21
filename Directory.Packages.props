@@ -6,7 +6,6 @@
   <ItemGroup>
     <!-- Functional programming -->
     <PackageVersion Include="morelinq" Version="4.4.0" />
-    <PackageVersion Include="Enums.NET" Version="5.0.0" />
     <!-- IDisposable -->
     <PackageVersion Include="Fody" Version="6.9.2">
       <PrivateAssets>all</PrivateAssets>

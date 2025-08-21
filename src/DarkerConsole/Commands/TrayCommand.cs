@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 using ConsoleAppFramework;
@@ -9,6 +10,7 @@ using Microsoft.Extensions.Options;
 
 namespace DarkerConsole.Commands;
 
+[SupportedOSPlatform("windows")]
 public class TrayCommand(
     TrayIconService trayIconService,
     ThemeService themeService,
