@@ -4,7 +4,8 @@
       "Bash(mkdir:*)",
       "Bash(dotnet build:*)",
       "WebSearch",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Bash(dotnet publish:*)"
     ],
     "deny": [],
     "ask": []
