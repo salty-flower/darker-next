@@ -27,6 +27,11 @@ namespace DarkerConsole.Infrastructure;
 internal partial class ServiceProvider
 {
     [UnconditionalSuppressMessage(
+        "Aot",
+        "IL3050:Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.",
+        Justification = "The options pattern is not used here"
+    )]
+    [UnconditionalSuppressMessage(
         "Trimming",
         "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code",
         Justification = "CompactConsoleFormatterOptions is simple and can be statically analyzed"
@@ -45,6 +50,11 @@ internal partial class ServiceProvider
             .CreateLogger<TrayIconService>();
     }
 
+    [UnconditionalSuppressMessage(
+        "Aot",
+        "IL3050:Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.",
+        Justification = "The options pattern is not used here"
+    )]
     [UnconditionalSuppressMessage(
         "Trimming",
         "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code",
@@ -65,6 +75,11 @@ internal partial class ServiceProvider
     }
 
     [UnconditionalSuppressMessage(
+        "Aot",
+        "IL3050:Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.",
+        Justification = "The options pattern is not used here"
+    )]
+    [UnconditionalSuppressMessage(
         "Trimming",
         "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code",
         Justification = "CompactConsoleFormatterOptions is simple and can be statically analyzed"
@@ -83,6 +98,11 @@ internal partial class ServiceProvider
             .CreateLogger<ToastService>();
     }
 
+    [UnconditionalSuppressMessage(
+        "Aot",
+        "IL3050:Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.",
+        Justification = "The options pattern is not used here"
+    )]
     [UnconditionalSuppressMessage(
         "Trimming",
         "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code",

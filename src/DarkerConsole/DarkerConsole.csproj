@@ -14,7 +14,6 @@
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <PublishTrimmed>true</PublishTrimmed>
     <TrimMode>partial</TrimMode>
-    <PublishReadyToRun>true</PublishReadyToRun>
     <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
     <DebuggerSupport>false</DebuggerSupport>
     <EnableUnsafeUTF7Encoding>false</EnableUnsafeUTF7Encoding>
@@ -23,7 +22,35 @@
     <HttpActivityPropagationSupport>false</HttpActivityPropagationSupport>
     <MetadataUpdaterSupport>false</MetadataUpdaterSupport>
     <UseSystemResourceKeys>true</UseSystemResourceKeys>
+    <PublishLzmaCompressed>true</PublishLzmaCompressed>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <NoWarn>$(NoWarn);IL21Aot</NoWarn>
   </PropertyGroup>
+  <!-- Publish profile settings -->
+  <!-- AOT Build -->
+  <PropertyGroup Condition="'$(PublishAot)' == 'true'">
+    <PublishLzmaCompressed>true</PublishLzmaCompressed>
+    <OptimizationPreference>Size</OptimizationPreference>
+    <IlcOptimizationPreference>Size</IlcOptimizationPreference>
+    <IlcGenerateStackTraceData>false</IlcGenerateStackTraceData>
+    <IlcFoldIdenticalMethodBodies>true</IlcFoldIdenticalMethodBodies>
+    <StripSymbols>true</StripSymbols>
+    <TieredCompilation>false</TieredCompilation>
+    <TieredPGO>false</TieredPGO>
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
+  </PropertyGroup>
+  <!-- Non-AOT Build -->
+  <PropertyGroup Condition="'$(PublishAot)' != 'true'">
+    <OptimizationPreference>Size</OptimizationPreference>
+    <TieredCompilation>false</TieredCompilation>
+    <TieredPGO>false</TieredPGO>
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
+  </PropertyGroup>
+  <ItemGroup>
+    <TrimmerRootAssembly Include="Tomlyn" />
+  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="ConsoleAppFramework" />
     <PackageReference Include="Tomlyn" />
@@ -32,6 +59,7 @@
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" />
+    <PackageReference Include="PublishAotCompressed" />
   </ItemGroup>
   <ItemGroup>
     <None Include="config.toml" CopyToOutputDirectory="Always" />
