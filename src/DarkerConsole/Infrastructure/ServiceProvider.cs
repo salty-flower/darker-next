@@ -26,29 +26,15 @@ namespace DarkerConsole.Infrastructure;
 [SupportedOSPlatform("windows")]
 internal partial class ServiceProvider
 {
-    [UnconditionalSuppressMessage(
-        "Aot",
-        "IL3050:Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.",
-        Justification = "The options pattern is not used here"
-    )]
-    [UnconditionalSuppressMessage(
-        "Trimming",
-        "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code",
-        Justification = "CompactConsoleFormatterOptions is simple and can be statically analyzed"
-    )]
-    private static ILogger<TrayIconService> CreateTrayIconLogger()
-    {
-        return LoggerFactory
-            .Create(builder =>
-                builder
-                    .AddConsole(options =>
-                    {
-                        options.FormatterName = "custom";
-                    })
-                    .AddConsoleFormatter<CompactConsoleFormatter, CompactConsoleFormatterOptions>()
-            )
-            .CreateLogger<TrayIconService>();
-    }
+    private static ILoggerFactory CreateLoggerFactory() =>
+        LoggerFactory.Create(builder =>
+            builder
+                .AddConsole(options =>
+                {
+                    options.FormatterName = "custom";
+                })
+                .AddConsoleFormatter<CompactConsoleFormatter, CompactConsoleFormatterOptions>()
+        );
 
     [UnconditionalSuppressMessage(
         "Aot",
@@ -60,19 +46,8 @@ internal partial class ServiceProvider
         "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code",
         Justification = "CompactConsoleFormatterOptions is simple and can be statically analyzed"
     )]
-    private static ILogger<ThemeService> CreateThemeServiceLogger()
-    {
-        return LoggerFactory
-            .Create(builder =>
-                builder
-                    .AddConsole(options =>
-                    {
-                        options.FormatterName = "custom";
-                    })
-                    .AddConsoleFormatter<CompactConsoleFormatter, CompactConsoleFormatterOptions>()
-            )
-            .CreateLogger<ThemeService>();
-    }
+    private static ILogger<TrayIconService> CreateTrayIconLogger() =>
+        CreateLoggerFactory().CreateLogger<TrayIconService>();
 
     [UnconditionalSuppressMessage(
         "Aot",
@@ -84,19 +59,8 @@ internal partial class ServiceProvider
         "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code",
         Justification = "CompactConsoleFormatterOptions is simple and can be statically analyzed"
     )]
-    private static ILogger<ToastService> CreateToastServiceLogger()
-    {
-        return LoggerFactory
-            .Create(builder =>
-                builder
-                    .AddConsole(options =>
-                    {
-                        options.FormatterName = "custom";
-                    })
-                    .AddConsoleFormatter<CompactConsoleFormatter, CompactConsoleFormatterOptions>()
-            )
-            .CreateLogger<ToastService>();
-    }
+    private static ILogger<ThemeService> CreateThemeServiceLogger() =>
+        CreateLoggerFactory().CreateLogger<ThemeService>();
 
     [UnconditionalSuppressMessage(
         "Aot",
@@ -108,19 +72,21 @@ internal partial class ServiceProvider
         "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code",
         Justification = "CompactConsoleFormatterOptions is simple and can be statically analyzed"
     )]
-    private static ILogger<TrayCommand> CreateTrayCommandLogger()
-    {
-        return LoggerFactory
-            .Create(builder =>
-                builder
-                    .AddConsole(options =>
-                    {
-                        options.FormatterName = "custom";
-                    })
-                    .AddConsoleFormatter<CompactConsoleFormatter, CompactConsoleFormatterOptions>()
-            )
-            .CreateLogger<TrayCommand>();
-    }
+    private static ILogger<ToastService> CreateToastServiceLogger() =>
+        CreateLoggerFactory().CreateLogger<ToastService>();
+
+    [UnconditionalSuppressMessage(
+        "Aot",
+        "IL3050:Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.",
+        Justification = "The options pattern is not used here"
+    )]
+    [UnconditionalSuppressMessage(
+        "Trimming",
+        "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code",
+        Justification = "CompactConsoleFormatterOptions is simple and can be statically analyzed"
+    )]
+    private static ILogger<TrayCommand> CreateTrayCommandLogger() =>
+        CreateLoggerFactory().CreateLogger<TrayCommand>();
 
     private static IOptions<AppConfig> CreateAppConfig()
     {

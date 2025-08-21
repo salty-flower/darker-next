@@ -11,8 +11,6 @@ namespace DarkerConsole.Services;
 public class TrayIconService(ThemeService themeService, ILogger<TrayIconService> logger)
     : IAsyncDisposable
 {
-    private readonly ThemeService _themeService = themeService;
-    private readonly ILogger<TrayIconService> _logger = logger;
     private IntPtr _windowHandle;
     private IntPtr _lightIcon;
     private IntPtr _darkIcon;
@@ -228,11 +226,11 @@ public class TrayIconService(ThemeService themeService, ILogger<TrayIconService>
                 LoadIcons();
                 CreateContextMenu();
                 CreateNotifyIcon();
-                _logger.LogInformation("Tray icon service initialized successfully");
+                logger.LogInformation("Tray icon service initialized successfully");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to initialize tray icon service");
+                logger.LogError(ex, "Failed to initialize tray icon service");
                 throw;
             }
         });
@@ -316,21 +314,21 @@ public class TrayIconService(ThemeService themeService, ILogger<TrayIconService>
 
                 if (_lightIcon != IntPtr.Zero && _darkIcon != IntPtr.Zero)
                 {
-                    _logger.LogInformation("Successfully loaded custom icons from files");
+                    logger.LogInformation("Successfully loaded custom icons from files");
                     return;
                 }
             }
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to load custom icons, falling back to system icons");
+            logger.LogWarning(ex, "Failed to load custom icons, falling back to system icons");
         }
 
         // Fallback to system icons
         _lightIcon = LoadIcon(IntPtr.Zero, new IntPtr(32516)); // IDI_QUESTION
         _darkIcon = LoadIcon(IntPtr.Zero, new IntPtr(32514)); // IDI_ERROR
 
-        _logger.LogInformation("Using system fallback icons");
+        logger.LogInformation("Using system fallback icons");
     }
 
     private void CreateContextMenu()
@@ -349,7 +347,7 @@ public class TrayIconService(ThemeService themeService, ILogger<TrayIconService>
             uID = 1,
             uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP,
             uCallbackMessage = WM_TRAYICON,
-            hIcon = _themeService.IsLightThemeEnabled() ? _lightIcon : _darkIcon,
+            hIcon = themeService.IsLightThemeEnabled() ? _lightIcon : _darkIcon,
             szTip = "DarkerConsole - Click to toggle theme",
         };
 
@@ -384,7 +382,7 @@ public class TrayIconService(ThemeService themeService, ILogger<TrayIconService>
     {
         try
         {
-            _logger.LogDebug(
+            logger.LogDebug(
                 "WindowProc called: msg={Msg:X}, wParam={WParam:X}, lParam={LParam:X}",
                 msg,
                 wParam.ToInt64(),
@@ -394,11 +392,11 @@ public class TrayIconService(ThemeService themeService, ILogger<TrayIconService>
             if (msg == WM_TRAYICON)
             {
                 var mouseMsg = (int)(lParam & 0xFFFF);
-                _logger.LogDebug("Tray icon message received: mouseMsg={MouseMsg:X}", mouseMsg);
+                logger.LogDebug("Tray icon message received: mouseMsg={MouseMsg:X}", mouseMsg);
 
                 if (mouseMsg == WM_LBUTTONUP)
                 {
-                    _logger.LogInformation("Left click detected on tray icon");
+                    logger.LogInformation("Left click detected on tray icon");
                     _ = Task.Run(async () =>
                     {
                         try
@@ -408,40 +406,40 @@ public class TrayIconService(ThemeService themeService, ILogger<TrayIconService>
                         }
                         catch (Exception ex)
                         {
-                            _logger.LogError(ex, "Error handling tray icon click");
+                            logger.LogError(ex, "Error handling tray icon click");
                         }
                     });
                 }
                 else if (mouseMsg == WM_RBUTTONUP)
                 {
-                    _logger.LogInformation("Right click detected on tray icon");
+                    logger.LogInformation("Right click detected on tray icon");
                     ShowContextMenu();
                 }
             }
             else if (msg == WM_COMMAND)
             {
                 var command = (int)(wParam & 0xFFFF);
-                _logger.LogDebug("Command received: {Command}", command);
+                logger.LogDebug("Command received: {Command}", command);
                 if (command == MENU_EXIT_ID)
                 {
-                    _logger.LogInformation("Exit command selected");
+                    logger.LogInformation("Exit command selected");
                     _onMenuExit?.Invoke();
                 }
                 else if (command == MENU_CONFIG_ID)
                 {
-                    _logger.LogInformation("Open config directory command selected");
+                    logger.LogInformation("Open config directory command selected");
                     OpenConfigDirectory();
                 }
             }
             else if (msg == WM_QUIT)
             {
-                _logger.LogInformation("Quit message received, terminating loop");
+                logger.LogInformation("Quit message received, terminating loop");
                 _exitRequested = true;
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error in window procedure");
+            logger.LogError(ex, "Error in window procedure");
         }
 
         return DefWindowProc(hWnd, msg, wParam, lParam);
@@ -464,12 +462,12 @@ public class TrayIconService(ThemeService themeService, ILogger<TrayIconService>
 
             if (selectedItem == MENU_EXIT_ID)
             {
-                _logger.LogInformation("Exit selected from context menu");
+                logger.LogInformation("Exit selected from context menu");
                 _onMenuExit?.Invoke();
             }
             else if (selectedItem == MENU_CONFIG_ID)
             {
-                _logger.LogInformation("Open config directory selected from context menu");
+                logger.LogInformation("Open config directory selected from context menu");
                 OpenConfigDirectory();
             }
         }
@@ -487,17 +485,17 @@ public class TrayIconService(ThemeService themeService, ILogger<TrayIconService>
                 UseShellExecute = true,
             };
             System.Diagnostics.Process.Start(startInfo);
-            _logger.LogInformation("Opened config directory: {ConfigDir}", configDir);
+            logger.LogInformation("Opened config directory: {ConfigDir}", configDir);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to open config directory");
+            logger.LogError(ex, "Failed to open config directory");
         }
     }
 
     public void RunMessageLoop()
     {
-        _logger.LogInformation("Starting Win32 message loop");
+        logger.LogInformation("Starting Win32 message loop");
         _mainThreadId = GetCurrentThreadId();
 
         MSG msg;
@@ -507,19 +505,19 @@ public class TrayIconService(ThemeService themeService, ILogger<TrayIconService>
             if (ret == -1)
             {
                 // Handle error
-                _logger.LogError("Error in GetMessage");
+                logger.LogError("Error in GetMessage");
                 break;
             }
             TranslateMessage(ref msg);
             DispatchMessage(ref msg);
         }
 
-        _logger.LogInformation("Message loop exited");
+        logger.LogInformation("Message loop exited");
     }
 
     public void ExitMessageLoop()
     {
-        _logger.LogInformation("Requesting message loop exit");
+        logger.LogInformation("Requesting message loop exit");
         if (!_exitRequested)
         {
             _exitRequested = true;
@@ -558,11 +556,11 @@ public class TrayIconService(ThemeService themeService, ILogger<TrayIconService>
                 if (_windowHandle != IntPtr.Zero)
                     DestroyWindow(_windowHandle);
 
-                _logger.LogInformation("Tray icon service disposed");
+                logger.LogInformation("Tray icon service disposed");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error disposing tray icon service");
+                logger.LogError(ex, "Error disposing tray icon service");
             }
 
             _disposed = true;

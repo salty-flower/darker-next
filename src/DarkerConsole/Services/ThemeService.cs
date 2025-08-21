@@ -12,7 +12,6 @@ namespace DarkerConsole.Services;
 [SupportedOSPlatform("windows")]
 public class ThemeService(ILogger<ThemeService> logger, IOptions<AppConfig> config)
 {
-    private readonly ILogger<ThemeService> _logger = logger;
     private readonly AppConfig _config = config.Value;
     private const string PERSONALIZE_KEY =
         @"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize";
@@ -26,7 +25,7 @@ public class ThemeService(ILogger<ThemeService> logger, IOptions<AppConfig> conf
             using var key = Registry.CurrentUser.OpenSubKey(PERSONALIZE_KEY, false);
             if (key == null)
             {
-                _logger.LogWarning("Personalization registry key not found, assuming dark theme");
+                logger.LogWarning("Personalization registry key not found, assuming dark theme");
                 return false;
             }
 
@@ -34,23 +33,21 @@ public class ThemeService(ILogger<ThemeService> logger, IOptions<AppConfig> conf
             var appsValue = key.GetValue(APPS_THEME_VALUE);
 
             if (systemValue is int systemTheme && appsValue is int appsTheme)
-            {
                 return _config.ThemeMode switch
                 {
                     "system-only" => systemTheme == 1,
                     "apps-only" => appsTheme == 1,
                     _ => systemTheme == 1 || appsTheme == 1,
                 };
-            }
 
-            _logger.LogWarning(
+            logger.LogWarning(
                 "Theme registry values not found or invalid type, assuming dark theme"
             );
             return false;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error reading theme from registry");
+            logger.LogError(ex, "Error reading theme from registry");
             return false;
         }
     }
@@ -64,7 +61,7 @@ public class ThemeService(ILogger<ThemeService> logger, IOptions<AppConfig> conf
                 using var key = Registry.CurrentUser.OpenSubKey(PERSONALIZE_KEY, true);
                 if (key == null)
                 {
-                    _logger.LogError("Cannot open personalization registry key for writing");
+                    logger.LogError("Cannot open personalization registry key for writing");
                     throw new InvalidOperationException("Cannot access Windows theme settings");
                 }
 
@@ -84,7 +81,7 @@ public class ThemeService(ILogger<ThemeService> logger, IOptions<AppConfig> conf
                 {
                     case "system-only":
                         key.SetValue(SYSTEM_THEME_VALUE, newValue, RegistryValueKind.DWord);
-                        _logger.LogInformation(
+                        logger.LogInformation(
                             "System theme changed to {Theme}",
                             newValue == 1 ? "Light" : "Dark"
                         );
@@ -92,7 +89,7 @@ public class ThemeService(ILogger<ThemeService> logger, IOptions<AppConfig> conf
 
                     case "apps-only":
                         key.SetValue(APPS_THEME_VALUE, newValue, RegistryValueKind.DWord);
-                        _logger.LogInformation(
+                        logger.LogInformation(
                             "Apps theme changed to {Theme}",
                             newValue == 1 ? "Light" : "Dark"
                         );
@@ -102,7 +99,7 @@ public class ThemeService(ILogger<ThemeService> logger, IOptions<AppConfig> conf
                     default:
                         key.SetValue(SYSTEM_THEME_VALUE, newValue, RegistryValueKind.DWord);
                         key.SetValue(APPS_THEME_VALUE, newValue, RegistryValueKind.DWord);
-                        _logger.LogInformation(
+                        logger.LogInformation(
                             "Both system and apps theme changed to {Theme}",
                             newValue == 1 ? "Light" : "Dark"
                         );
@@ -113,7 +110,7 @@ public class ThemeService(ILogger<ThemeService> logger, IOptions<AppConfig> conf
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error toggling theme in registry");
+                logger.LogError(ex, "Error toggling theme in registry");
                 throw;
             }
         });
@@ -128,7 +125,7 @@ public class ThemeService(ILogger<ThemeService> logger, IOptions<AppConfig> conf
                 using var key = Registry.CurrentUser.OpenSubKey(PERSONALIZE_KEY, true);
                 if (key == null)
                 {
-                    _logger.LogError("Cannot open personalization registry key for writing");
+                    logger.LogError("Cannot open personalization registry key for writing");
                     throw new InvalidOperationException("Cannot access Windows theme settings");
                 }
 
@@ -138,7 +135,7 @@ public class ThemeService(ILogger<ThemeService> logger, IOptions<AppConfig> conf
                 {
                     case "system-only":
                         key.SetValue(SYSTEM_THEME_VALUE, value, RegistryValueKind.DWord);
-                        _logger.LogInformation(
+                        logger.LogInformation(
                             "System theme set to {Theme}",
                             isLight ? "Light" : "Dark"
                         );
@@ -146,7 +143,7 @@ public class ThemeService(ILogger<ThemeService> logger, IOptions<AppConfig> conf
 
                     case "apps-only":
                         key.SetValue(APPS_THEME_VALUE, value, RegistryValueKind.DWord);
-                        _logger.LogInformation(
+                        logger.LogInformation(
                             "Apps theme set to {Theme}",
                             isLight ? "Light" : "Dark"
                         );
@@ -156,7 +153,7 @@ public class ThemeService(ILogger<ThemeService> logger, IOptions<AppConfig> conf
                     default:
                         key.SetValue(SYSTEM_THEME_VALUE, value, RegistryValueKind.DWord);
                         key.SetValue(APPS_THEME_VALUE, value, RegistryValueKind.DWord);
-                        _logger.LogInformation(
+                        logger.LogInformation(
                             "Both system and apps theme set to {Theme}",
                             isLight ? "Light" : "Dark"
                         );
@@ -167,7 +164,7 @@ public class ThemeService(ILogger<ThemeService> logger, IOptions<AppConfig> conf
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error setting theme in registry");
+                logger.LogError(ex, "Error setting theme in registry");
                 throw;
             }
         });
@@ -178,11 +175,11 @@ public class ThemeService(ILogger<ThemeService> logger, IOptions<AppConfig> conf
         try
         {
             SendSettingChangeMessage();
-            _logger.LogDebug("Notified system of theme change");
+            logger.LogDebug("Notified system of theme change");
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(
+            logger.LogWarning(
                 ex,
                 "Failed to notify system of theme change, changes may require restart"
             );

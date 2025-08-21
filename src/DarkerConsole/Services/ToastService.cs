@@ -7,21 +7,19 @@ namespace DarkerConsole.Services;
 
 public class ToastService(ILogger<ToastService> logger)
 {
-    private readonly ILogger<ToastService> _logger = logger;
-
     public async Task ShowThemeChangedNotificationAsync(string themeName)
     {
         await Task.Run(() =>
         {
             try
             {
-                _logger.LogInformation("Theme switched to {Theme}", themeName);
+                logger.LogInformation("Theme switched to {Theme}", themeName);
                 // Note: Toast notifications require UWP APIs that may not work in console apps
                 // For now, we'll just log the notification
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to show theme change notification");
+                logger.LogWarning(ex, "Failed to show theme change notification");
             }
         });
     }
@@ -32,13 +30,13 @@ public class ToastService(ILogger<ToastService> logger)
         {
             try
             {
-                _logger.LogError("Error: {Message}", message);
+                logger.LogError("Error: {Message}", message);
                 // Note: Toast notifications require UWP APIs that may not work in console apps
                 // For now, we'll just log the error
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to show error notification");
+                logger.LogWarning(ex, "Failed to show error notification");
             }
         });
     }
@@ -49,13 +47,13 @@ public class ToastService(ILogger<ToastService> logger)
         {
             try
             {
-                _logger.LogInformation("{Title}: {Message}", title, message);
+                logger.LogInformation("{Title}: {Message}", title, message);
                 // Note: Toast notifications require UWP APIs that may not work in console apps
                 // For now, we'll just log the info
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to show info notification");
+                logger.LogWarning(ex, "Failed to show info notification");
             }
         });
     }
@@ -64,11 +62,11 @@ public class ToastService(ILogger<ToastService> logger)
     {
         try
         {
-            _logger.LogDebug("Toast notification system disposed");
+            logger.LogDebug("Toast notification system disposed");
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Error disposing toast notification system");
+            logger.LogWarning(ex, "Error disposing toast notification system");
         }
     }
 }
