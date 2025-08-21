@@ -34,4 +34,21 @@
       StandardOutputImportance="low"
     />
   </Target>
+  <!-- Compile SVG icons to ICO -->
+  <Target Name="CompileIcons" BeforeTargets="Build">
+    <PropertyGroup>
+      <AssetsDir>$(MSBuildThisFileDirectory)src\DarkerConsole\assets</AssetsDir>
+      <OutputIconDir>$(MSBuildThisFileDirectory)src\DarkerConsole</OutputIconDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <SvgIcons Include="$(AssetsDir)\*.svg" />
+    </ItemGroup>
+    <Exec
+      Command="magick &quot;%(SvgIcons.FullPath)&quot; -resize 16x16 -resize 32x32 -resize 48x48 &quot;$(OutputIconDir)\%(SvgIcons.Filename).ico&quot;"
+      Condition="Exists('%(SvgIcons.FullPath)')"
+      ContinueOnError="false"
+      StandardErrorImportance="high"
+      StandardOutputImportance="low"
+    />
+  </Target>
 </Project>

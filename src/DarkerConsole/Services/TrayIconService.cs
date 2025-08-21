@@ -30,6 +30,7 @@ public class TrayIconService(ILogger<TrayIconService> logger) : IAsyncDisposable
     private const int NIF_ICON = 0x00000002;
     private const int NIF_TIP = 0x00000004;
     private const int MENU_EXIT_ID = 1000;
+    private const int MENU_CONFIG_ID = 1001;
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     private struct NOTIFYICONDATA
@@ -267,23 +268,54 @@ public class TrayIconService(ILogger<TrayIconService> logger) : IAsyncDisposable
 
     private void LoadIcons()
     {
-        // Use system icons instead of file-based icons to avoid transparency issues
-        _lightIcon = LoadIcon(IntPtr.Zero, new IntPtr(32516)); // IDI_QUESTION - visible icon
-        _darkIcon = LoadIcon(IntPtr.Zero, new IntPtr(32514)); // IDI_ERROR - different icon for contrast
+        try
+        {
+            var basePath = AppContext.BaseDirectory;
+            var lightIconPath = Path.Combine(basePath, "icon-light.ico");
+            var darkIconPath = Path.Combine(basePath, "icon-dark.ico");
 
-        if (_lightIcon == IntPtr.Zero || _darkIcon == IntPtr.Zero)
-        {
-            _logger.LogWarning("Failed to load system icons");
+            if (File.Exists(lightIconPath) && File.Exists(darkIconPath))
+            {
+                _lightIcon = LoadImage(
+                    IntPtr.Zero,
+                    lightIconPath,
+                    IMAGE_ICON,
+                    16,
+                    16,
+                    LR_LOADFROMFILE
+                );
+                _darkIcon = LoadImage(
+                    IntPtr.Zero,
+                    darkIconPath,
+                    IMAGE_ICON,
+                    16,
+                    16,
+                    LR_LOADFROMFILE
+                );
+
+                if (_lightIcon != IntPtr.Zero && _darkIcon != IntPtr.Zero)
+                {
+                    _logger.LogInformation("Successfully loaded custom icons from files");
+                    return;
+                }
+            }
         }
-        else
+        catch (Exception ex)
         {
-            _logger.LogInformation("Successfully loaded system icons for tray");
+            _logger.LogWarning(ex, "Failed to load custom icons, falling back to system icons");
         }
+
+        // Fallback to system icons
+        _lightIcon = LoadIcon(IntPtr.Zero, new IntPtr(32516)); // IDI_QUESTION
+        _darkIcon = LoadIcon(IntPtr.Zero, new IntPtr(32514)); // IDI_ERROR
+
+        _logger.LogInformation("Using system fallback icons");
     }
 
     private void CreateContextMenu()
     {
         _menuHandle = CreatePopupMenu();
+        AppendMenu(_menuHandle, MF_STRING, MENU_CONFIG_ID, "Open Config Directory");
         AppendMenu(_menuHandle, MF_STRING, MENU_EXIT_ID, "Exit");
     }
 
@@ -374,6 +406,11 @@ public class TrayIconService(ILogger<TrayIconService> logger) : IAsyncDisposable
                     _logger.LogInformation("Exit command selected");
                     _onMenuExit?.Invoke();
                 }
+                else if (command == MENU_CONFIG_ID)
+                {
+                    _logger.LogInformation("Open config directory command selected");
+                    OpenConfigDirectory();
+                }
             }
         }
         catch (Exception ex)
@@ -404,6 +441,31 @@ public class TrayIconService(ILogger<TrayIconService> logger) : IAsyncDisposable
                 _logger.LogInformation("Exit selected from context menu");
                 _onMenuExit?.Invoke();
             }
+            else if (selectedItem == MENU_CONFIG_ID)
+            {
+                _logger.LogInformation("Open config directory selected from context menu");
+                OpenConfigDirectory();
+            }
+        }
+    }
+
+    private void OpenConfigDirectory()
+    {
+        try
+        {
+            var configDir = AppContext.BaseDirectory;
+            var startInfo = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "explorer.exe",
+                Arguments = $"\"{configDir}\"",
+                UseShellExecute = true,
+            };
+            System.Diagnostics.Process.Start(startInfo);
+            _logger.LogInformation("Opened config directory: {ConfigDir}", configDir);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to open config directory");
         }
     }
 
