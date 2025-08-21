@@ -22,7 +22,9 @@ public class TrayIconService(ThemeService themeService, ILogger<TrayIconService>
     private bool _disposed;
     private volatile bool _exitRequested;
     private WndProc? _wndProcDelegate;
+    private uint _mainThreadId;
 
+    private const uint WM_QUIT = 0x0012;
     private const int WM_TRAYICON = 0x8000;
     private const int WM_LBUTTONUP = 0x0202;
     private const int WM_RBUTTONUP = 0x0205;
@@ -180,7 +182,7 @@ public class TrayIconService(ThemeService themeService, ILogger<TrayIconService>
     private static extern bool DestroyMenu(IntPtr hMenu);
 
     [DllImport("user32.dll")]
-    private static extern bool GetMessage(
+    private static extern int GetMessage(
         out MSG lpMsg,
         IntPtr hWnd,
         int wMsgFilterMin,
@@ -195,6 +197,17 @@ public class TrayIconService(ThemeService themeService, ILogger<TrayIconService>
 
     [DllImport("user32.dll")]
     private static extern void PostQuitMessage(int nExitCode);
+
+    [DllImport("user32.dll")]
+    private static extern bool PostThreadMessage(
+        uint idThread,
+        uint Msg,
+        UIntPtr wParam,
+        IntPtr lParam
+    );
+
+    [DllImport("kernel32.dll")]
+    private static extern uint GetCurrentThreadId();
 
     private const int IMAGE_ICON = 1;
     private const int LR_LOADFROMFILE = 0x00000010;
@@ -230,10 +243,14 @@ public class TrayIconService(ThemeService themeService, ILogger<TrayIconService>
         var hInstance = GetModuleHandle(null);
         var className = $"DarkerConsoleTray_{Guid.NewGuid():N}";
 
+        if (_wndProcDelegate == null)
+        {
+            throw new InvalidOperationException("_wndProcDelegate is not initialized");
+        }
         var wndClass = new WNDCLASS
         {
             style = 0,
-            lpfnWndProc = Marshal.GetFunctionPointerForDelegate(_wndProcDelegate!),
+            lpfnWndProc = Marshal.GetFunctionPointerForDelegate(_wndProcDelegate),
             cbClsExtra = 0,
             cbWndExtra = 0,
             hInstance = hInstance,
@@ -416,6 +433,11 @@ public class TrayIconService(ThemeService themeService, ILogger<TrayIconService>
                     OpenConfigDirectory();
                 }
             }
+            else if (msg == WM_QUIT)
+            {
+                _logger.LogInformation("Quit message received, terminating loop");
+                _exitRequested = true;
+            }
         }
         catch (Exception ex)
         {
@@ -476,10 +498,18 @@ public class TrayIconService(ThemeService themeService, ILogger<TrayIconService>
     public void RunMessageLoop()
     {
         _logger.LogInformation("Starting Win32 message loop");
+        _mainThreadId = GetCurrentThreadId();
 
         MSG msg;
-        while (!_exitRequested && GetMessage(out msg, IntPtr.Zero, 0, 0))
+        int ret;
+        while ((ret = GetMessage(out msg, IntPtr.Zero, 0, 0)) != 0)
         {
+            if (ret == -1)
+            {
+                // Handle error
+                _logger.LogError("Error in GetMessage");
+                break;
+            }
             TranslateMessage(ref msg);
             DispatchMessage(ref msg);
         }
@@ -490,8 +520,11 @@ public class TrayIconService(ThemeService themeService, ILogger<TrayIconService>
     public void ExitMessageLoop()
     {
         _logger.LogInformation("Requesting message loop exit");
-        _exitRequested = true;
-        PostQuitMessage(0);
+        if (!_exitRequested)
+        {
+            _exitRequested = true;
+            PostThreadMessage(_mainThreadId, WM_QUIT, UIntPtr.Zero, IntPtr.Zero);
+        }
     }
 
     public async ValueTask DisposeAsync()
