@@ -4,6 +4,7 @@
     <UseWindowsDesktopSdk>true</UseWindowsDesktopSdk>
     <UseWPF>false</UseWPF>
     <UseWindowsForms>false</UseWindowsForms>
+    <ApplicationManifest>Properties\app.manifest</ApplicationManifest>
     <AssemblyName>DarkerConsole</AssemblyName>
     <RootNamespace>DarkerConsole</RootNamespace>
     <PublishSingleFile>true</PublishSingleFile>

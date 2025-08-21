@@ -299,16 +299,16 @@ public class TrayIconService(ThemeService themeService, ILogger<TrayIconService>
                     IntPtr.Zero,
                     lightIconPath,
                     IMAGE_ICON,
-                    16,
-                    16,
+                    256,
+                    256,
                     LR_LOADFROMFILE
                 );
                 _darkIcon = LoadImage(
                     IntPtr.Zero,
                     darkIconPath,
                     IMAGE_ICON,
-                    16,
-                    16,
+                    256,
+                    256,
                     LR_LOADFROMFILE
                 );
 

@@ -72,7 +72,10 @@ class Program
             IntPtr.Zero
         );
         var stdOut = new System.IO.StreamWriter(
-            new System.IO.FileStream(hOut, System.IO.FileAccess.Write),
+            new System.IO.FileStream(
+                new Microsoft.Win32.SafeHandles.SafeFileHandle(hOut, false),
+                System.IO.FileAccess.Write
+            ),
             System.Console.OutputEncoding
         )
         {
@@ -90,7 +93,10 @@ class Program
             IntPtr.Zero
         );
         var stdIn = new System.IO.StreamReader(
-            new System.IO.FileStream(hIn, System.IO.FileAccess.Read),
+            new System.IO.FileStream(
+                new Microsoft.Win32.SafeHandles.SafeFileHandle(hIn, false),
+                System.IO.FileAccess.Read
+            ),
             System.Console.InputEncoding
         );
         System.Console.SetIn(stdIn);

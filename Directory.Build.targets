@@ -42,8 +42,12 @@
     <ItemGroup>
       <SvgIcons Include="$(AssetsDir)\*.svg" />
     </ItemGroup>
+    <ItemGroup>
+      <IcoFiles Include="$(OutputIconDir)\*.ico" />
+    </ItemGroup>
+    <Delete Files="@(IcoFiles)" />
     <Exec
-      Command="magick &quot;%(SvgIcons.FullPath)&quot; -resize 16x16 -resize 32x32 -resize 48x48 &quot;$(OutputIconDir)\%(SvgIcons.Filename).ico&quot;"
+      Command="magick &quot;%(SvgIcons.FullPath)&quot; -transparent white -density 1200 -resize 1024x1024 -define icon:auto-resize=256,48,32,16 &quot;$(OutputIconDir)\\%(SvgIcons.Filename).ico&quot;"
       Condition="Exists('%(SvgIcons.FullPath)')"
       ContinueOnError="false"
       StandardErrorImportance="high"
