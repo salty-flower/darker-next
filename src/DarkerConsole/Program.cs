@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Runtime.Versioning;
 using System.Threading.Tasks;
 using DarkerConsole.Infrastructure;
@@ -7,18 +8,26 @@ using DarkerConsole.Infrastructure;
 namespace DarkerConsole;
 
 [SupportedOSPlatform("windows")]
-class Program
+public partial class Program
 {
     private const int ATTACH_PARENT_PROCESS = -1;
 
-    [DllImport("kernel32.dll")]
-    private static extern bool AttachConsole(int dwProcessId);
+    [LibraryImport("kernel32.dll", EntryPoint = "AttachConsole")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool AttachConsole(int dwProcessId);
 
-    [DllImport("kernel32.dll", SetLastError = true)]
-    private static extern IntPtr GetStdHandle(int nStdHandle);
+    [LibraryImport("kernel32.dll", EntryPoint = "GetStdHandle", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.SysInt)]
+    private static partial IntPtr GetStdHandle(int nStdHandle);
 
-    [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-    private static extern IntPtr CreateFile(
+    [LibraryImport(
+        "kernel32.dll",
+        EntryPoint = "CreateFileW",
+        SetLastError = true,
+        StringMarshalling = StringMarshalling.Utf16
+    )]
+    [return: MarshalAs(UnmanagedType.SysInt)]
+    private static partial IntPtr CreateFile(
         string fileName,
         uint desiredAccess,
         uint shareMode,
