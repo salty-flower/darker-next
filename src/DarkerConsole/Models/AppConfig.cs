@@ -8,18 +8,12 @@ public sealed class AppConfig
     public IconConfig Icons { get; init; } = new();
     public ToastConfig Toasts { get; init; } = new();
     public LoggingConfig Logging { get; init; } = new();
-
-    // Performance-optimized value accessors to avoid repeated property access
-    public readonly record struct FastAccess(string ThemeMode, bool ShowToasts)
-    {
-        public static FastAccess From(AppConfig config) => new(config.ThemeMode, config.ShowToasts);
-    }
 }
 
 public sealed class IconConfig
 {
-    public string LightIconPath { get; init; } = "Resources/icon-light.ico";
-    public string DarkIconPath { get; init; } = "Resources/icon-dark.ico";
+    public string LightIconPath { get; init; } = "icon-light.ico";
+    public string DarkIconPath { get; init; } = "icon-dark.ico";
 }
 
 public sealed class ToastConfig
