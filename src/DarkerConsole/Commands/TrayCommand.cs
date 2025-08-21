@@ -34,7 +34,8 @@ public class TrayCommand(
 
             _logger.LogInformation("Tray icon initialized successfully");
 
-            await WaitForExitSignal();
+            SetupExitHandling();
+            _trayIconService.RunMessageLoop();
         }
         catch (Exception ex)
         {
@@ -83,28 +84,24 @@ public class TrayCommand(
     private void OnMenuExit()
     {
         _logger.LogInformation("Exit requested from tray menu");
-        _cancellationTokenSource.Cancel();
+        _trayIconService.ExitMessageLoop();
     }
 
-    private async Task WaitForExitSignal()
+    private void SetupExitHandling()
     {
-        var tcs = new TaskCompletionSource<bool>();
-
         Console.CancelKeyPress += (_, e) =>
         {
             e.Cancel = true;
             _logger.LogInformation("Ctrl+C received, shutting down gracefully");
-            tcs.SetResult(true);
+            _trayIconService.ExitMessageLoop();
         };
 
-        _cancellationTokenSource.Token.Register(() => tcs.SetResult(true));
+        _cancellationTokenSource.Token.Register(() => _trayIconService.ExitMessageLoop());
 
         AppDomain.CurrentDomain.ProcessExit += (_, _) =>
         {
             _logger.LogInformation("Process exit event received");
-            tcs.SetResult(true);
+            _trayIconService.ExitMessageLoop();
         };
-
-        await tcs.Task;
     }
 }

@@ -81,6 +81,17 @@ public class TrayIconService : IAsyncDisposable
         public int y;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    private struct MSG
+    {
+        public IntPtr hwnd;
+        public int message;
+        public IntPtr wParam;
+        public IntPtr lParam;
+        public int time;
+        public POINT pt;
+    }
+
     private delegate IntPtr WndProc(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam);
     private readonly WndProc _wndProcDelegate;
 
@@ -161,6 +172,23 @@ public class TrayIconService : IAsyncDisposable
 
     [DllImport("user32.dll")]
     private static extern bool DestroyMenu(IntPtr hMenu);
+
+    [DllImport("user32.dll")]
+    private static extern bool GetMessage(
+        out MSG lpMsg,
+        IntPtr hWnd,
+        int wMsgFilterMin,
+        int wMsgFilterMax
+    );
+
+    [DllImport("user32.dll")]
+    private static extern bool TranslateMessage(ref MSG lpMsg);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr DispatchMessage(ref MSG lpMsg);
+
+    [DllImport("user32.dll")]
+    private static extern void PostQuitMessage(int nExitCode);
 
     private const int IMAGE_ICON = 1;
     private const int LR_LOADFROMFILE = 0x00000010;
@@ -375,6 +403,26 @@ public class TrayIconService : IAsyncDisposable
                 IntPtr.Zero
             );
         }
+    }
+
+    public void RunMessageLoop()
+    {
+        _logger.LogInformation("Starting Win32 message loop");
+
+        MSG msg;
+        while (GetMessage(out msg, IntPtr.Zero, 0, 0))
+        {
+            TranslateMessage(ref msg);
+            DispatchMessage(ref msg);
+        }
+
+        _logger.LogInformation("Message loop exited");
+    }
+
+    public void ExitMessageLoop()
+    {
+        _logger.LogInformation("Posting quit message to exit message loop");
+        PostQuitMessage(0);
     }
 
     public async ValueTask DisposeAsync()
