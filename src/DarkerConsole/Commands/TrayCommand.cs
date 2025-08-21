@@ -2,7 +2,6 @@ using System;
 using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
-using ConsoleAppFramework;
 using DarkerConsole.Models;
 using DarkerConsole.Services;
 using Microsoft.Extensions.Logging;
@@ -33,11 +32,6 @@ public class TrayCommand(
 
             SetupExitHandling();
             trayIconService.RunMessageLoop();
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Error running tray application");
-            throw;
         }
         finally
         {

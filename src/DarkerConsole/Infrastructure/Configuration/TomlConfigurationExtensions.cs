@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.FileProviders;
 
@@ -18,15 +17,13 @@ internal static class TomlConfigurationExtensions
         string path,
         bool optional = false,
         bool reloadOnChange = true
-    )
-    {
-        return builder.AddTomlFile(
+    ) =>
+        builder.AddTomlFile(
             provider: null,
             path: path,
             optional: optional,
             reloadOnChange: reloadOnChange
         );
-    }
 
     /// <summary>
     /// Adds a TOML configuration source to the builder
@@ -37,14 +34,8 @@ internal static class TomlConfigurationExtensions
         string path,
         bool optional,
         bool reloadOnChange
-    )
-    {
-        if (builder == null)
-            throw new ArgumentNullException(nameof(builder));
-        if (string.IsNullOrEmpty(path))
-            throw new ArgumentException("Path cannot be null or empty", nameof(path));
-
-        return builder.AddTomlFile(source =>
+    ) =>
+        builder.AddTomlFile(source =>
         {
             source.FileProvider = provider;
             source.Path = path;
@@ -52,7 +43,6 @@ internal static class TomlConfigurationExtensions
             source.ReloadOnChange = reloadOnChange;
             source.ResolveFileProvider();
         });
-    }
 
     /// <summary>
     /// Adds a TOML configuration source to the builder
@@ -60,8 +50,5 @@ internal static class TomlConfigurationExtensions
     public static IConfigurationBuilder AddTomlFile(
         this IConfigurationBuilder builder,
         Action<TomlConfigurationSource>? configureSource
-    )
-    {
-        return builder.Add(configureSource);
-    }
+    ) => builder.Add(configureSource);
 }

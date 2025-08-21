@@ -45,19 +45,12 @@ class Program
             RedirectConsoleIO();
         }
 
-        try
-        {
-            // Create Jab service provider (compile-time DI)
-            var serviceProvider = new ServiceProvider();
+        // Create Jab service provider (compile-time DI)
+        var serviceProvider = new ServiceProvider();
 
-            // Get and run tray command
-            var trayCommand = serviceProvider.GetService<DarkerConsole.Commands.TrayCommand>();
-            await trayCommand.RunAsync();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Application terminated unexpectedly: {ex}");
-        }
+        // Get and run tray command
+        var trayCommand = serviceProvider.GetService<DarkerConsole.Commands.TrayCommand>();
+        await trayCommand.RunAsync();
     }
 
     private static void RedirectConsoleIO()

@@ -12,19 +12,20 @@ namespace DarkerConsole.Infrastructure.Configuration;
 /// </summary>
 internal sealed class TomlOptionsMonitor : IOptionsMonitor<AppConfig>, IDisposable
 {
-    private readonly IConfiguration _configuration;
-    private readonly object _lock = new();
-    private AppConfig? _currentValue;
-    private IDisposable? _changeToken;
-    private event Action<AppConfig, string?>? _onChange;
-    private bool _disposed;
+    private readonly IConfiguration configuration;
+    private readonly Lock @lock = new();
+    private AppConfig? currentValue;
+    private IDisposable? changeToken;
+    private event Action<AppConfig, string?>? onChange;
+    private bool disposed;
 
     public TomlOptionsMonitor(IConfiguration configuration)
     {
-        _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+        this.configuration =
+            configuration ?? throw new ArgumentNullException(nameof(configuration));
 
         // Set up change tracking
-        _changeToken = _configuration
+        changeToken = this.configuration
             .GetReloadToken()
             .RegisterChangeCallback(_ => OnConfigurationChanged(), null);
     }
@@ -33,12 +34,12 @@ internal sealed class TomlOptionsMonitor : IOptionsMonitor<AppConfig>, IDisposab
     {
         get
         {
-            if (_currentValue == null)
-                lock (_lock)
+            if (currentValue == null)
+                lock (@lock)
 
-                    _currentValue ??= LoadConfiguration();
+                    currentValue ??= LoadConfiguration();
 
-            return _currentValue;
+            return currentValue;
         }
     }
 
@@ -46,45 +47,45 @@ internal sealed class TomlOptionsMonitor : IOptionsMonitor<AppConfig>, IDisposab
 
     public IDisposable OnChange(Action<AppConfig, string?> listener)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
-        _onChange += listener;
-        return new ChangeTokenDisposable(() => _onChange -= listener);
+        ObjectDisposedException.ThrowIf(disposed, this);
+        onChange += listener;
+        return new ChangeTokenDisposable(() => onChange -= listener);
     }
 
     private AppConfig LoadConfiguration()
     {
         // Manual binding - AOT friendly, no reflection
-        var themeMode = _configuration["ThemeMode"] ?? "both";
-        var showToasts = !bool.TryParse(_configuration["ShowToasts"], out var st) || st;
-        var autoStartup = bool.TryParse(_configuration["AutoStartup"], out var au) && au;
+        var themeMode = configuration["ThemeMode"] ?? "both";
+        var showToasts = !bool.TryParse(configuration["ShowToasts"], out var st) || st;
+        var autoStartup = bool.TryParse(configuration["AutoStartup"], out var au) && au;
 
         var icons = new IconConfig
         {
-            LightIconPath = _configuration["Icons:LightIconPath"] ?? "icon-light.ico",
-            DarkIconPath = _configuration["Icons:DarkIconPath"] ?? "icon-dark.ico",
+            LightIconPath = configuration["Icons:LightIconPath"] ?? "icon-light.ico",
+            DarkIconPath = configuration["Icons:DarkIconPath"] ?? "icon-dark.ico",
         };
 
         var toasts = new ToastConfig
         {
             ShowOnThemeChange =
-                !bool.TryParse(_configuration["Toasts:ShowOnThemeChange"], out var stc) || stc,
-            ShowOnError = !bool.TryParse(_configuration["Toasts:ShowOnError"], out var soe) || soe,
+                !bool.TryParse(configuration["Toasts:ShowOnThemeChange"], out var stc) || stc,
+            ShowOnError = !bool.TryParse(configuration["Toasts:ShowOnError"], out var soe) || soe,
             ShowOnStartup =
-                bool.TryParse(_configuration["Toasts:ShowOnStartup"], out var sos) && sos,
-            DurationSeconds = int.TryParse(_configuration["Toasts:DurationSeconds"], out var ds)
+                bool.TryParse(configuration["Toasts:ShowOnStartup"], out var sos) && sos,
+            DurationSeconds = int.TryParse(configuration["Toasts:DurationSeconds"], out var ds)
                 ? ds
                 : 3,
         };
 
         var logging = new LoggingConfig
         {
-            MinimumLevel = _configuration["Logging:MinimumLevel"] ?? "Information",
+            MinimumLevel = configuration["Logging:MinimumLevel"] ?? "Information",
             EnableFileLogging =
-                bool.TryParse(_configuration["Logging:EnableFileLogging"], out var efl) && efl,
+                bool.TryParse(configuration["Logging:EnableFileLogging"], out var efl) && efl,
             EnableConsoleLogging =
-                bool.TryParse(_configuration["Logging:EnableConsoleLogging"], out var ecl) && ecl,
+                bool.TryParse(configuration["Logging:EnableConsoleLogging"], out var ecl) && ecl,
             RetainedFileCountLimit = int.TryParse(
-                _configuration["Logging:RetainedFileCountLimit"],
+                configuration["Logging:RetainedFileCountLimit"],
                 out var rfcl
             )
                 ? rfcl
@@ -104,28 +105,28 @@ internal sealed class TomlOptionsMonitor : IOptionsMonitor<AppConfig>, IDisposab
 
     private void OnConfigurationChanged()
     {
-        if (_disposed)
+        if (disposed)
             return;
 
         AppConfig newValue;
-        lock (_lock)
+        lock (@lock)
         {
             newValue = LoadConfiguration();
-            _currentValue = newValue;
+            currentValue = newValue;
         }
 
-        _onChange?.Invoke(newValue, Options.DefaultName);
+        onChange?.Invoke(newValue, Options.DefaultName);
     }
 
     public void Dispose()
     {
-        if (_disposed)
+        if (disposed)
             return;
 
-        _disposed = true;
-        _changeToken?.Dispose();
-        _changeToken = null;
-        _onChange = null;
+        disposed = true;
+        changeToken?.Dispose();
+        changeToken = null;
+        onChange = null;
     }
 
     private sealed class ChangeTokenDisposable(Action dispose) : IDisposable

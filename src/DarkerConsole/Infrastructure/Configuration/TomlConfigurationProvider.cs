@@ -7,11 +7,9 @@ namespace DarkerConsole.Infrastructure.Configuration;
 /// <summary>
 /// Configuration provider for TOML files with hot reloading support
 /// </summary>
-internal sealed class TomlConfigurationProvider : FileConfigurationProvider
+internal sealed class TomlConfigurationProvider(TomlConfigurationSource source)
+    : FileConfigurationProvider(source)
 {
-    public TomlConfigurationProvider(TomlConfigurationSource source)
-        : base(source) { }
-
     public override void Load(Stream stream)
     {
         try
