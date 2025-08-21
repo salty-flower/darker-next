@@ -45,6 +45,8 @@
     <PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" />
     <PackageReference Include="Jab" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" />
+    <PackageReference Include="Microsoft.Extensions.FileProviders.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" />
     <PackageReference Include="PublishAotCompressed" />

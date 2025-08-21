@@ -10,10 +10,8 @@ using Microsoft.Win32;
 namespace DarkerConsole.Services;
 
 [SupportedOSPlatform("windows")]
-public class ThemeService(ILogger<ThemeService> logger, IOptions<AppConfig> config)
+public class ThemeService(ILogger<ThemeService> logger, IOptionsMonitor<AppConfig> configMon)
 {
-    private readonly AppConfig _config = config.Value;
-    private readonly string _themeMode = config.Value.ThemeMode;
     private const string PERSONALIZE_KEY =
         @"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize";
     private const string SYSTEM_THEME_VALUE = "SystemUsesLightTheme";
@@ -35,13 +33,12 @@ public class ThemeService(ILogger<ThemeService> logger, IOptions<AppConfig> conf
             var systemTheme = (int)(key.GetValue(SYSTEM_THEME_VALUE) ?? DARK_THEME);
             var appsTheme = (int)(key.GetValue(APPS_THEME_VALUE) ?? DARK_THEME);
 
-            return _themeMode switch
+            return configMon.CurrentValue.ThemeMode switch
             {
                 "system-only" => systemTheme == LIGHT_THEME,
                 "apps-only" => appsTheme == LIGHT_THEME,
                 _ => systemTheme == LIGHT_THEME || appsTheme == LIGHT_THEME,
             };
-
         }
         catch (Exception ex)
         {
@@ -66,7 +63,7 @@ public class ThemeService(ILogger<ThemeService> logger, IOptions<AppConfig> conf
                 var currentSystemValue = (int)(key.GetValue(SYSTEM_THEME_VALUE) ?? DARK_THEME);
                 var currentAppsValue = (int)(key.GetValue(APPS_THEME_VALUE) ?? DARK_THEME);
 
-                var isCurrentlyLight = _config.ThemeMode switch
+                var isCurrentlyLight = configMon.CurrentValue.ThemeMode switch
                 {
                     "system-only" => currentSystemValue == LIGHT_THEME,
                     "apps-only" => currentAppsValue == LIGHT_THEME,
@@ -75,7 +72,7 @@ public class ThemeService(ILogger<ThemeService> logger, IOptions<AppConfig> conf
 
                 var newValue = isCurrentlyLight ? DARK_THEME : LIGHT_THEME;
 
-                switch (_themeMode)
+                switch (configMon.CurrentValue.ThemeMode)
                 {
                     case "system-only":
                         key.SetValue(SYSTEM_THEME_VALUE, newValue, RegistryValueKind.DWord);
@@ -129,7 +126,7 @@ public class ThemeService(ILogger<ThemeService> logger, IOptions<AppConfig> conf
 
                 var value = isLight ? LIGHT_THEME : DARK_THEME;
 
-                switch (_themeMode)
+                switch (configMon.CurrentValue.ThemeMode)
                 {
                     case "system-only":
                         key.SetValue(SYSTEM_THEME_VALUE, value, RegistryValueKind.DWord);

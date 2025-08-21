@@ -15,40 +15,34 @@ public class TrayCommand(
     TrayIconService trayIconService,
     ThemeService themeService,
     ToastService toastService,
-    IOptions<AppConfig> config,
+    IOptionsMonitor<AppConfig> configMon,
     ILogger<TrayCommand> logger
 )
 {
-    private readonly TrayIconService _trayIconService = trayIconService;
-    private readonly ThemeService _themeService = themeService;
-    private readonly ToastService _toastService = toastService;
-    private readonly AppConfig _config = config.Value;
-    private readonly AppConfig.FastAccess _fastConfig = AppConfig.FastAccess.From(config.Value);
-    private readonly ILogger<TrayCommand> _logger = logger;
-    private readonly CancellationTokenSource _cancellationTokenSource = new();
+    private readonly CancellationTokenSource cancellationTokenSource = new();
 
     public async Task RunAsync()
     {
-        _logger.LogInformation("Starting DarkerConsole tray application");
+        logger.LogInformation("Starting DarkerConsole tray application");
 
         try
         {
-            await _trayIconService.InitializeAsync(OnTrayIconClick, OnMenuExit);
+            await trayIconService.InitializeAsync(OnTrayIconClick, OnMenuExit);
 
-            _logger.LogInformation("Tray icon initialized successfully");
+            logger.LogInformation("Tray icon initialized successfully");
 
             SetupExitHandling();
-            _trayIconService.RunMessageLoop();
+            trayIconService.RunMessageLoop();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error running tray application");
+            logger.LogError(ex, "Error running tray application");
             throw;
         }
         finally
         {
-            await _trayIconService.DisposeAsync();
-            _logger.LogInformation("DarkerConsole tray application stopped");
+            await trayIconService.DisposeAsync();
+            logger.LogInformation("DarkerConsole tray application stopped");
         }
     }
 
@@ -56,19 +50,19 @@ public class TrayCommand(
     {
         try
         {
-            var wasLight = _themeService.IsLightThemeEnabled();
-            await _themeService.ToggleThemeAsync();
-            var isNowLight = _themeService.IsLightThemeEnabled();
+            var wasLight = themeService.IsLightThemeEnabled();
+            await themeService.ToggleThemeAsync();
+            var isNowLight = themeService.IsLightThemeEnabled();
 
-            await _trayIconService.UpdateIconAsync(!isNowLight);
+            await trayIconService.UpdateIconAsync(!isNowLight);
 
-            if (_fastConfig.ShowToasts)
+            if (configMon.CurrentValue.Toasts.ShowOnThemeChange)
             {
                 var themeText = isNowLight ? "Light" : "Dark";
-                _toastService.ShowThemeChangedNotification(themeText);
+                toastService.ShowThemeChangedNotification(themeText);
             }
 
-            _logger.LogInformation(
+            logger.LogInformation(
                 "Theme toggled: {From} -> {To}",
                 wasLight ? "Light" : "Dark",
                 isNowLight ? "Light" : "Dark"
@@ -76,18 +70,16 @@ public class TrayCommand(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error toggling theme");
-            if (_fastConfig.ShowToasts)
-            {
-                _toastService.ShowErrorNotification("Failed to toggle theme");
-            }
+            logger.LogError(ex, "Error toggling theme");
+            if (configMon.CurrentValue.Toasts.ShowOnError)
+                toastService.ShowErrorNotification("Failed to toggle theme");
         }
     }
 
     private void OnMenuExit()
     {
-        _logger.LogInformation("Exit requested from tray menu");
-        _trayIconService.ExitMessageLoop();
+        logger.LogInformation("Exit requested from tray menu");
+        trayIconService.ExitMessageLoop();
     }
 
     private void SetupExitHandling()
@@ -95,16 +87,16 @@ public class TrayCommand(
         Console.CancelKeyPress += (_, e) =>
         {
             e.Cancel = true;
-            _logger.LogInformation("Ctrl+C received, shutting down gracefully");
-            _trayIconService.ExitMessageLoop();
+            logger.LogInformation("Ctrl+C received, shutting down gracefully");
+            trayIconService.ExitMessageLoop();
         };
 
-        _cancellationTokenSource.Token.Register(() => _trayIconService.ExitMessageLoop());
+        cancellationTokenSource.Token.Register(() => trayIconService.ExitMessageLoop());
 
         AppDomain.CurrentDomain.ProcessExit += (_, _) =>
         {
-            _logger.LogInformation("Process exit event received");
-            _trayIconService.ExitMessageLoop();
+            logger.LogInformation("Process exit event received");
+            trayIconService.ExitMessageLoop();
         };
     }
 }
