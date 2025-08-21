@@ -1,0 +1,62 @@
+name: .NET Core Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      default_bump:
+        description: 'Bump type (patch, minor, major, false)'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+        - patch
+        - minor
+        - major
+        - false
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0 # Required for git tag
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 10
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build
+      run: dotnet build --no-restore
+
+    - name: Publish DarkerConsole
+      run: dotnet publish src/DarkerConsole/DarkerConsole.csproj -p:PublishAOT=true
+
+    - name: Upload a Build Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: DarkerConsole-win-x64
+        path: build/publish/DarkerConsole/release_win-x64
+
+    - name: Bump version and push tag
+      id: tag_version
+      uses: mathieudutour/github-tag-action@v6.2
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        default_bump: ${{ inputs.default_bump }}
+        tag_prefix: 'v'
+        
+    - name: Create a GitHub release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ steps.tag_version.outputs.new_tag }}
+        name: Release ${{ steps.tag_version.outputs.new_tag }}
+        body: ${{ steps.tag_version.outputs.changelog }}
+        files: build/publish/DarkerConsole/release_win-x64/*
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
