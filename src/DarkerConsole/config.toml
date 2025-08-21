@@ -1,0 +1,42 @@
+# DarkerConsole Configuration File
+# This file uses TOML format - see https://toml.io for syntax
+
+# Theme switching mode: "both" (default), "system-only", or "apps-only"
+theme_mode = "both"
+
+# Show toast notifications for theme changes and events
+show_toasts = true
+
+# Automatically start with Windows (requires elevated permissions to set)
+auto_startup = false
+
+[icons]
+# Icon file paths (relative to executable or absolute paths)
+light_icon_path = "Resources/icon-light.ico"
+dark_icon_path = "Resources/icon-dark.ico"
+
+[toasts]
+# Show notification when theme changes
+show_on_theme_change = true
+
+# Show notification on errors
+show_on_error = true
+
+# Show notification when app starts (useful for debugging)
+show_on_startup = false
+
+# Duration in seconds for toast notifications
+duration_seconds = 3
+
+[logging]
+# Minimum log level: Verbose, Debug, Information, Warning, Error, Fatal
+minimum_level = "Information"
+
+# Enable logging to file
+enable_file_logging = true
+
+# Enable console logging (useful for debugging, usually false for tray apps)
+enable_console_logging = false
+
+# Number of daily log files to retain
+retained_file_count_limit = 7

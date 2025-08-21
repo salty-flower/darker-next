@@ -17,12 +17,4 @@
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
     <ArtifactsPath>$(SolutionDir)build</ArtifactsPath>
   </PropertyGroup>
-  <!-- Weaver settings -->
-  <PropertyGroup>
-    <WeaverConfiguration>
-      <Weavers>
-        <Janitor />
-      </Weavers>
-    </WeaverConfiguration>
-  </PropertyGroup>
 </Project>

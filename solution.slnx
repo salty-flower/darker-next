@@ -10,4 +10,5 @@
     <File Path="Directory.Packages.props" />
     <File Path="NuGet.config" />
   </Folder>
+  <Project Path="src/DarkerConsole/DarkerConsole.csproj" />
 </Solution>
