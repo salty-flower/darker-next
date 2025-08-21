@@ -27,7 +27,4 @@ public sealed class ToastConfig
 public sealed class LoggingConfig
 {
     public string MinimumLevel { get; init; } = "Information";
-    public bool EnableFileLogging { get; init; } = true;
-    public bool EnableConsoleLogging { get; init; } = false;
-    public int RetainedFileCountLimit { get; init; } = 7;
 }

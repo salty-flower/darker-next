@@ -25,8 +25,8 @@ internal sealed class TomlOptionsMonitor : IOptionsMonitor<AppConfig>, IDisposab
             configuration ?? throw new ArgumentNullException(nameof(configuration));
 
         // Set up change tracking
-        changeToken = this.configuration
-            .GetReloadToken()
+        changeToken = this
+            .configuration.GetReloadToken()
             .RegisterChangeCallback(_ => OnConfigurationChanged(), null);
     }
 
@@ -80,16 +80,6 @@ internal sealed class TomlOptionsMonitor : IOptionsMonitor<AppConfig>, IDisposab
         var logging = new LoggingConfig
         {
             MinimumLevel = configuration["Logging:MinimumLevel"] ?? "Information",
-            EnableFileLogging =
-                bool.TryParse(configuration["Logging:EnableFileLogging"], out var efl) && efl,
-            EnableConsoleLogging =
-                bool.TryParse(configuration["Logging:EnableConsoleLogging"], out var ecl) && ecl,
-            RetainedFileCountLimit = int.TryParse(
-                configuration["Logging:RetainedFileCountLimit"],
-                out var rfcl
-            )
-                ? rfcl
-                : 7,
         };
 
         return new AppConfig

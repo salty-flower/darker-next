@@ -9,7 +9,6 @@ using DarkerConsole.Services;
 using Jab;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Console;
 using Microsoft.Extensions.Options;
 
 namespace DarkerConsole.Infrastructure;
@@ -25,18 +24,13 @@ namespace DarkerConsole.Infrastructure;
 [Singleton(typeof(TrayCommand))]
 [Singleton(typeof(IOptionsMonitor<AppConfig>), typeof(TomlOptionsMonitor))]
 [Singleton(typeof(IConfiguration), Factory = nameof(CreateConfiguration))]
+[Singleton(typeof(LoggerFactoryProvider))]
+[Singleton(typeof(ILoggerFactory), Factory = nameof(CreateLoggerFactoryFromProvider))]
 [SupportedOSPlatform("windows")]
 internal partial class ServiceProvider
 {
-    private static ILoggerFactory CreateLoggerFactory() =>
-        LoggerFactory.Create(builder =>
-            builder.AddSimpleConsole(options =>
-            {
-                options.IncludeScopes = true;
-                options.TimestampFormat = "[HH:mm:ss.fff] ";
-                options.SingleLine = true;
-            })
-        );
+    private static ILoggerFactory CreateLoggerFactoryFromProvider(LoggerFactoryProvider provider) =>
+        provider.CreateLoggerFactory();
 
     [UnconditionalSuppressMessage(
         "Aot",
@@ -48,8 +42,8 @@ internal partial class ServiceProvider
         "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code",
         Justification = "CompactConsoleFormatterOptions is simple and can be statically analyzed"
     )]
-    private static ILogger<TrayIconService> CreateTrayIconLogger() =>
-        CreateLoggerFactory().CreateLogger<TrayIconService>();
+    private static ILogger<TrayIconService> CreateTrayIconLogger(ILoggerFactory loggerFactory) =>
+        loggerFactory.CreateLogger<TrayIconService>();
 
     [UnconditionalSuppressMessage(
         "Aot",
@@ -61,8 +55,8 @@ internal partial class ServiceProvider
         "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code",
         Justification = "CompactConsoleFormatterOptions is simple and can be statically analyzed"
     )]
-    private static ILogger<ThemeService> CreateThemeServiceLogger() =>
-        CreateLoggerFactory().CreateLogger<ThemeService>();
+    private static ILogger<ThemeService> CreateThemeServiceLogger(ILoggerFactory loggerFactory) =>
+        loggerFactory.CreateLogger<ThemeService>();
 
     [UnconditionalSuppressMessage(
         "Aot",
@@ -74,8 +68,8 @@ internal partial class ServiceProvider
         "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code",
         Justification = "CompactConsoleFormatterOptions is simple and can be statically analyzed"
     )]
-    private static ILogger<ToastService> CreateToastServiceLogger() =>
-        CreateLoggerFactory().CreateLogger<ToastService>();
+    private static ILogger<ToastService> CreateToastServiceLogger(ILoggerFactory loggerFactory) =>
+        loggerFactory.CreateLogger<ToastService>();
 
     [UnconditionalSuppressMessage(
         "Aot",
@@ -87,8 +81,8 @@ internal partial class ServiceProvider
         "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code",
         Justification = "CompactConsoleFormatterOptions is simple and can be statically analyzed"
     )]
-    private static ILogger<TrayCommand> CreateTrayCommandLogger() =>
-        CreateLoggerFactory().CreateLogger<TrayCommand>();
+    private static ILogger<TrayCommand> CreateTrayCommandLogger(ILoggerFactory loggerFactory) =>
+        loggerFactory.CreateLogger<TrayCommand>();
 
     private static IConfiguration CreateConfiguration() =>
         new ConfigurationBuilder()
