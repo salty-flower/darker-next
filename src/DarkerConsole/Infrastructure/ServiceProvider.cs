@@ -28,24 +28,14 @@ namespace DarkerConsole.Infrastructure;
 [SupportedOSPlatform("windows")]
 internal partial class ServiceProvider
 {
-    [UnconditionalSuppressMessage(
-        "Aot",
-        "IL3050:Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.",
-        Justification = "CompactConsoleFormatterOptions is simple and statically analyzable"
-    )]
-    [UnconditionalSuppressMessage(
-        "Trimming",
-        "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code",
-        Justification = "CompactConsoleFormatterOptions is simple and statically analyzable"
-    )]
     private static ILoggerFactory CreateLoggerFactory() =>
         LoggerFactory.Create(builder =>
-            builder
-                .AddConsole(options =>
-                {
-                    options.FormatterName = "custom";
-                })
-                .AddConsoleFormatter<CompactConsoleFormatter, CompactConsoleFormatterOptions>()
+            builder.AddSimpleConsole(options =>
+            {
+                options.IncludeScopes = true;
+                options.TimestampFormat = "[HH:mm:ss.fff] ";
+                options.SingleLine = true;
+            })
         );
 
     [UnconditionalSuppressMessage(
