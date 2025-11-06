@@ -80,6 +80,23 @@ internal sealed class TomlOptionsMonitor : IOptionsMonitor<AppConfig>, IDisposab
         var logging = new LoggingConfig
         {
             MinimumLevel = configuration["Logging:MinimumLevel"] ?? "Information",
+            EnableFileLogging = !bool.TryParse(
+                    configuration["Logging:EnableFileLogging"],
+                    out var efl
+                )
+                || efl,
+            EnableConsoleLogging = bool.TryParse(
+                    configuration["Logging:EnableConsoleLogging"],
+                    out var ecl
+                )
+                && ecl,
+            RetainedFileCountLimit = int.TryParse(
+                    configuration["Logging:RetainedFileCountLimit"],
+                    out var retain
+                )
+                && retain > 0
+                ? retain
+                : 7,
         };
 
         return new AppConfig

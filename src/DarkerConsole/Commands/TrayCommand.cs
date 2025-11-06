@@ -14,6 +14,7 @@ public class TrayCommand(
     TrayIconService trayIconService,
     ThemeService themeService,
     ToastService toastService,
+    StartupRegistrationService startupRegistrationService,
     IOptionsMonitor<AppConfig> configMon,
     ILogger<TrayCommand> logger
 )
@@ -24,11 +25,22 @@ public class TrayCommand(
     {
         logger.LogInformation("Starting DarkerConsole tray application");
 
+        using var autoStartRegistration =
+            configMon.OnChange((_, _) => startupRegistrationService.ApplyStartupPreference());
+
         try
         {
+            startupRegistrationService.ApplyStartupPreference();
             await trayIconService.InitializeAsync(OnTrayIconClick, OnMenuExit);
 
             logger.LogInformation("Tray icon initialized successfully");
+
+            var config = configMon.CurrentValue;
+            if (config.ShowToasts && config.Toasts.ShowOnStartup)
+                toastService.ShowInfoNotification(
+                    "DarkerConsole",
+                    "Tray application started"
+                );
 
             SetupExitHandling();
             trayIconService.RunMessageLoop();
@@ -50,7 +62,8 @@ public class TrayCommand(
 
             await trayIconService.UpdateIconAsync(!isNowLight);
 
-            if (configMon.CurrentValue.Toasts.ShowOnThemeChange)
+            var config = configMon.CurrentValue;
+            if (config.ShowToasts && config.Toasts.ShowOnThemeChange)
             {
                 var themeText = isNowLight ? "Light" : "Dark";
                 toastService.ShowThemeChangedNotification(themeText);
@@ -65,7 +78,8 @@ public class TrayCommand(
         catch (Exception ex)
         {
             logger.LogError(ex, "Error toggling theme");
-            if (configMon.CurrentValue.Toasts.ShowOnError)
+            var config = configMon.CurrentValue;
+            if (config.ShowToasts && config.Toasts.ShowOnError)
                 toastService.ShowErrorNotification("Failed to toggle theme");
         }
     }

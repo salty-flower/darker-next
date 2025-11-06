@@ -21,6 +21,7 @@ namespace DarkerConsole.Infrastructure;
 [Singleton(typeof(TrayIconService))]
 [Singleton(typeof(ThemeService))]
 [Singleton(typeof(ToastService))]
+[Singleton(typeof(StartupRegistrationService))]
 [Singleton(typeof(TrayCommand))]
 [Singleton(typeof(IOptionsMonitor<AppConfig>), typeof(TomlOptionsMonitor))]
 [Singleton(typeof(IConfiguration), Factory = nameof(CreateConfiguration))]
