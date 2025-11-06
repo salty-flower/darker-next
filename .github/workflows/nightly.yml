@@ -1,0 +1,71 @@
+name: Nightly
+
+on:
+  push:
+    branches: [main]
+    tags-ignore:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  nightly:
+    name: Nightly release
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+          include-prerelease: true
+      - name: Restore dependencies
+        run: dotnet restore
+      - name: Publish Native AOT build
+        run: >-
+          dotnet publish src/DarkerConsole/DarkerConsole.csproj
+          -c Release
+          -r win-x64
+          -p:PublishAot=true
+          --self-contained true
+          -o build/publish
+      - name: Archive nightly artifacts
+        shell: pwsh
+        run: |
+          Compress-Archive -Path "build/publish/*" -DestinationPath "build/DarkerConsole-nightly-win-x64.zip" -Force
+      - name: Compute nightly metadata
+        shell: pwsh
+        run: |
+          $base = git describe --tags --match "v[0-9]*" --abbrev=0 2>$null
+          if (-not $base) { $base = "v0.0.0" }
+          $timestamp = (Get-Date -Format "yyyyMMdd-HHmm")
+          $shortSha = "${{ github.sha }}".Substring(0, 7)
+          $tag = "$base-nightly.$timestamp"
+          $lines = @(
+            "## Nightly build",
+            "",
+            "* Commit: ${{ github.sha }}",
+            "* Short SHA: $shortSha",
+            "* Summary: ${{ github.event.head_commit.message }}",
+            "* Built at: $timestamp UTC"
+          )
+          $body = $lines -join "`n"
+          Set-Content -Path nightly-notes.md -Value $body -Encoding utf8
+          "NIGHTLY_TAG=$tag" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "NIGHTLY_BODY_FILE=nightly-notes.md" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      - name: Publish nightly release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ env.NIGHTLY_TAG }}
+          name: Nightly ${{ env.NIGHTLY_TAG }}
+          bodyFile: ${{ env.NIGHTLY_BODY_FILE }}
+          artifacts: build/DarkerConsole-nightly-win-x64.zip
+          artifactContentType: application/zip
+          prerelease: true
+          allowUpdates: true
+          makeLatest: false
+          token: ${{ secrets.GITHUB_TOKEN }}
