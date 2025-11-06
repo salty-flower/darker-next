@@ -3,25 +3,18 @@ using System.Collections.Concurrent;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using Microsoft.Extensions.Logging;
 
 namespace DarkerConsole.Infrastructure.Logging;
 
-internal sealed class FileLoggerProvider : ILoggerProvider
+internal sealed class FileLoggerProvider(string logDirectory, int retainedFileCount) : ILoggerProvider
 {
-    private readonly string logDirectory;
-    private readonly int retainedFileCount;
     private readonly ConcurrentDictionary<string, FileLogger> loggers = new();
-    private readonly object fileLock = new();
+    private readonly Lock fileLock = new();
     private string? currentLogPath;
     private StreamWriter? currentWriter;
     private bool disposed;
-
-    public FileLoggerProvider(string logDirectory, int retainedFileCount)
-    {
-        this.logDirectory = logDirectory;
-        this.retainedFileCount = retainedFileCount > 0 ? retainedFileCount : 7;
-    }
 
     public ILogger CreateLogger(string categoryName) =>
         loggers.GetOrAdd(categoryName, name => new FileLogger(name, this));
@@ -35,12 +28,10 @@ internal sealed class FileLoggerProvider : ILoggerProvider
         foreach (var logger in loggers.Values)
             logger.Dispose();
 
-        lock (fileLock)
-        {
-            currentWriter?.Dispose();
-            currentWriter = null;
-            currentLogPath = null;
-        }
+        using var _ = fileLock.EnterScope();
+        currentWriter?.Dispose();
+        currentWriter = null;
+        currentLogPath = null;
     }
 
     internal void WriteLog(
@@ -74,11 +65,9 @@ internal sealed class FileLoggerProvider : ILoggerProvider
                 .Append(exception);
         }
 
-        lock (fileLock)
-        {
-            EnsureWriter();
-            currentWriter?.WriteLine(builder.ToString());
-        }
+        using var _ = fileLock.EnterScope();
+        EnsureWriter();
+        currentWriter?.WriteLine(builder.ToString());
     }
 
     private void EnsureWriter()
@@ -121,7 +110,7 @@ internal sealed class FileLoggerProvider : ILoggerProvider
             var files = new DirectoryInfo(logDirectory)
                 .EnumerateFiles("*.log")
                 .OrderByDescending(f => f.Name)
-                .Skip(retainedFileCount)
+                .Skip(GetRetentionLimit())
                 .ToList();
 
             foreach (var file in files)
@@ -177,4 +166,6 @@ internal sealed class FileLoggerProvider : ILoggerProvider
         {
         }
     }
+
+    private int GetRetentionLimit() => retainedFileCount > 0 ? retainedFileCount : 7;
 }

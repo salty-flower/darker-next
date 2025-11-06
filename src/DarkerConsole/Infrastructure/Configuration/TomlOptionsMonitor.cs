@@ -10,23 +10,21 @@ namespace DarkerConsole.Infrastructure.Configuration;
 /// Custom IOptionsMonitor implementation that directly binds to configuration
 /// without requiring the full DI container infrastructure
 /// </summary>
-internal sealed class TomlOptionsMonitor : IOptionsMonitor<AppConfig>, IDisposable
+internal sealed class TomlOptionsMonitor(IConfiguration configuration) : IOptionsMonitor<AppConfig>, IDisposable
 {
-    private readonly IConfiguration configuration;
-    private readonly Lock @lock = new();
+    private readonly Lock gate = new();
     private AppConfig? currentValue;
     private IDisposable? changeToken;
     private event Action<AppConfig, string?>? onChange;
     private bool disposed;
 
-    public TomlOptionsMonitor(IConfiguration configuration)
+    public TomlOptionsMonitor
     {
-        this.configuration =
-            configuration ?? throw new ArgumentNullException(nameof(configuration));
+        ArgumentNullException.ThrowIfNull(configuration);
 
         // Set up change tracking
-        changeToken = this
-            .configuration.GetReloadToken()
+        changeToken = configuration
+            .GetReloadToken()
             .RegisterChangeCallback(_ => OnConfigurationChanged(), null);
     }
 
@@ -35,9 +33,10 @@ internal sealed class TomlOptionsMonitor : IOptionsMonitor<AppConfig>, IDisposab
         get
         {
             if (currentValue == null)
-                lock (@lock)
-
-                    currentValue ??= LoadConfiguration();
+            {
+                using var _ = gate.EnterScope();
+                currentValue ??= LoadConfiguration();
+            }
 
             return currentValue;
         }
@@ -116,7 +115,7 @@ internal sealed class TomlOptionsMonitor : IOptionsMonitor<AppConfig>, IDisposab
             return;
 
         AppConfig newValue;
-        lock (@lock)
+        using (gate.EnterScope())
         {
             newValue = LoadConfiguration();
             currentValue = newValue;
