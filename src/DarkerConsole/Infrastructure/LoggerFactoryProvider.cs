@@ -1,4 +1,6 @@
 using System;
+using System.IO;
+using DarkerConsole.Infrastructure.Logging;
 using DarkerConsole.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
@@ -16,14 +18,26 @@ internal class LoggerFactoryProvider(IOptionsMonitor<AppConfig> optionsMonitor)
             : LogLevel.Information;
 
         return LoggerFactory.Create(builder =>
-            builder
-                .AddSimpleConsole(options =>
+        {
+            builder.SetMinimumLevel(minLogLevel);
+
+            if (config.Logging.EnableConsoleLogging)
+            {
+                builder.AddSimpleConsole(options =>
                 {
                     options.IncludeScopes = true;
                     options.TimestampFormat = "[HH:mm:ss.fff] ";
                     options.SingleLine = true;
-                })
-                .SetMinimumLevel(minLogLevel)
-        );
+                });
+            }
+
+            if (config.Logging.EnableFileLogging)
+            {
+                var logDirectory = Path.Combine(AppContext.BaseDirectory, "logs");
+                builder.AddProvider(
+                    new FileLoggerProvider(logDirectory, config.Logging.RetainedFileCountLimit)
+                );
+            }
+        });
     }
 }

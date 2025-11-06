@@ -4,14 +4,21 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Threading.Tasks;
+using DarkerConsole.Models;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace DarkerConsole.Services;
 
 [SupportedOSPlatform("windows")]
-public class TrayIconService(ThemeService themeService, ILogger<TrayIconService> logger)
+public class TrayIconService(
+    ThemeService themeService,
+    ILogger<TrayIconService> logger,
+    IOptionsMonitor<AppConfig> configMonitor
+)
     : IAsyncDisposable
 {
+    private readonly IOptionsMonitor<AppConfig> configMonitor = configMonitor;
     private IntPtr windowHandle;
     private IntPtr lightIcon;
     private IntPtr darkIcon;
@@ -22,9 +29,9 @@ public class TrayIconService(ThemeService themeService, ILogger<TrayIconService>
     private volatile bool exitRequested;
     private WndProc? wndProcDelegate;
     private uint mainThreadId;
+    private IDisposable? configChangeRegistration;
+    private readonly object iconLock = new();
     private static readonly string WindowClassName = $"DarkerConsoleTray_{Environment.ProcessId}";
-    private static ReadOnlySpan<byte> LightIconName => "icon-light.ico"u8;
-    private static ReadOnlySpan<byte> DarkIconName => "icon-dark.ico"u8;
 
     private const uint WM_QUIT = 0x0012;
     private const int WM_TRAYICON = 0x8000;
@@ -222,12 +229,14 @@ public class TrayIconService(ThemeService themeService, ILogger<TrayIconService>
         this.onMenuExit = onMenuExit;
         wndProcDelegate = WindowProc;
 
+        configChangeRegistration ??= this.configMonitor.OnChange((config, _) => ReloadIcons(config));
+
         await Task.Run(() =>
         {
             try
             {
                 CreateMessageWindow();
-                LoadIcons();
+                LoadIcons(this.configMonitor.CurrentValue);
                 CreateContextMenu();
                 CreateNotifyIcon();
                 logger.LogInformation("Tray icon service initialized successfully");
@@ -283,27 +292,97 @@ public class TrayIconService(ThemeService themeService, ILogger<TrayIconService>
             throw new InvalidOperationException("Failed to create message window");
     }
 
-    private void LoadIcons()
+    private void LoadIcons(AppConfig config)
     {
-        var basePath = AppContext.BaseDirectory;
-        var lightIconPath = Path.Combine(basePath, "icon-light.ico");
-        var darkIconPath = Path.Combine(basePath, "icon-dark.ico");
-
-        if (!File.Exists(lightIconPath) || !File.Exists(darkIconPath))
+        lock (iconLock)
         {
-            // Fallback to system icons
-            lightIcon = LoadIcon(IntPtr.Zero, new IntPtr(32516)); // IDI_QUESTION
-            darkIcon = LoadIcon(IntPtr.Zero, new IntPtr(32514)); // IDI_ERROR
-            logger.LogInformation("Using system fallback icons");
-            return;
-        }
-        lightIcon = LoadImage(IntPtr.Zero, lightIconPath, IMAGE_ICON, 256, 256, LR_LOADFROMFILE);
-        darkIcon = LoadImage(IntPtr.Zero, darkIconPath, IMAGE_ICON, 256, 256, LR_LOADFROMFILE);
+            ReleaseIconHandles();
 
-        if (lightIcon != IntPtr.Zero && darkIcon != IntPtr.Zero)
-            logger.LogInformation("Successfully loaded custom icons from files");
-        else
-            logger.LogWarning("Failed to load custom icons from files");
+            var iconConfig = config.Icons ?? new IconConfig();
+            var lightIconPath = ResolveIconPath(iconConfig.LightIconPath ?? "icon-light.ico");
+            var darkIconPath = ResolveIconPath(iconConfig.DarkIconPath ?? "icon-dark.ico");
+
+            if (!File.Exists(lightIconPath) || !File.Exists(darkIconPath))
+            {
+                if (!File.Exists(lightIconPath))
+                    logger.LogWarning("Light icon not found at path {Path}", lightIconPath);
+                if (!File.Exists(darkIconPath))
+                    logger.LogWarning("Dark icon not found at path {Path}", darkIconPath);
+
+                LoadFallbackIcons();
+                return;
+            }
+
+            lightIcon = LoadImage(IntPtr.Zero, lightIconPath, IMAGE_ICON, 256, 256, LR_LOADFROMFILE);
+            darkIcon = LoadImage(IntPtr.Zero, darkIconPath, IMAGE_ICON, 256, 256, LR_LOADFROMFILE);
+
+            if (lightIcon != IntPtr.Zero && darkIcon != IntPtr.Zero)
+            {
+                logger.LogInformation(
+                    "Loaded tray icons from {LightPath} and {DarkPath}",
+                    lightIconPath,
+                    darkIconPath
+                );
+                return;
+            }
+
+            logger.LogWarning(
+                "Failed to load custom tray icons from {LightPath} and {DarkPath}, using fallback icons",
+                lightIconPath,
+                darkIconPath
+            );
+
+            ReleaseIconHandles();
+            LoadFallbackIcons();
+        }
+    }
+
+    private void ReloadIcons(AppConfig config)
+    {
+        if (disposed)
+            return;
+
+        try
+        {
+            LoadIcons(config);
+            if (windowHandle != IntPtr.Zero)
+                _ = UpdateIconAsync(!themeService.IsLightThemeEnabled());
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to reload tray icons after configuration change");
+        }
+    }
+
+    private void ReleaseIconHandles()
+    {
+        if (lightIcon != IntPtr.Zero)
+        {
+            DestroyIcon(lightIcon);
+            lightIcon = IntPtr.Zero;
+        }
+
+        if (darkIcon != IntPtr.Zero)
+        {
+            DestroyIcon(darkIcon);
+            darkIcon = IntPtr.Zero;
+        }
+    }
+
+    private void LoadFallbackIcons()
+    {
+        lightIcon = LoadIcon(IntPtr.Zero, new IntPtr(32516)); // IDI_QUESTION
+        darkIcon = LoadIcon(IntPtr.Zero, new IntPtr(32514)); // IDI_ERROR
+        logger.LogInformation("Using system fallback tray icons");
+    }
+
+    private static string ResolveIconPath(string iconPath)
+    {
+        var combined = Path.IsPathRooted(iconPath)
+            ? iconPath
+            : Path.Combine(AppContext.BaseDirectory, iconPath);
+
+        return Path.GetFullPath(combined);
     }
 
     private void CreateContextMenu()
@@ -334,7 +413,15 @@ public class TrayIconService(ThemeService themeService, ILogger<TrayIconService>
     {
         await Task.Run(() =>
         {
-            var icon = useDarkIcon ? darkIcon : lightIcon;
+            if (windowHandle == IntPtr.Zero)
+                return;
+
+            IntPtr icon;
+            lock (iconLock)
+            {
+                icon = useDarkIcon ? darkIcon : lightIcon;
+            }
+
             if (icon == IntPtr.Zero)
                 return;
 
@@ -506,6 +593,9 @@ public class TrayIconService(ThemeService themeService, ILogger<TrayIconService>
         {
             try
             {
+                configChangeRegistration?.Dispose();
+                configChangeRegistration = null;
+
                 if (windowHandle != IntPtr.Zero)
                 {
                     var nid = new NOTIFYICONDATA
@@ -517,10 +607,10 @@ public class TrayIconService(ThemeService themeService, ILogger<TrayIconService>
                     Shell_NotifyIcon(NIM_DELETE, in nid);
                 }
 
-                if (lightIcon != IntPtr.Zero)
-                    DestroyIcon(lightIcon);
-                if (darkIcon != IntPtr.Zero)
-                    DestroyIcon(darkIcon);
+                lock (iconLock)
+                {
+                    ReleaseIconHandles();
+                }
                 if (menuHandle != IntPtr.Zero)
                     DestroyMenu(menuHandle);
                 if (windowHandle != IntPtr.Zero)
